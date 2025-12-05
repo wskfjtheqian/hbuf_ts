@@ -22,7 +22,7 @@ export class Result implements Data {
     msg: string
     data?: Data | void
 
-    toData():  Blob | ArrayBuffer {
+    toData(): Blob | ArrayBuffer {
         return new ArrayBuffer(0);
     }
 
@@ -68,7 +68,7 @@ export interface Client {
         serverId: number,
         name: string,
         id: number,
-        req: Data,
+        req: Data | Blob | ArrayBuffer,
         fromJson: ((json: {}) => T) | null,
         fromData: ((json: ArrayBuffer) => T) | null,
     ): Promise<T>;
@@ -88,7 +88,7 @@ export abstract class ServerClient {
     protected invoke<T>(
         name: string,
         id: number,
-        req: Data,
+        req: Data | Blob | ArrayBuffer,
         fromJson: ((json: {}) => T) | null,
         fromData: ((json: ArrayBuffer) => T) | null,
     ): Promise<T> {
@@ -110,11 +110,11 @@ export abstract class ServerClient {
 
 
 export interface ServerInvoke {
-    formData(buf:  Blob | ArrayBuffer | Record<string, any>): Data
+    formData(buf: Blob | ArrayBuffer | Record<string, any>): Data | Blob | ArrayBuffer
 
-    toData(data: Data):  Blob | ArrayBuffer | Record<string, any>
+    toData(data: Data): Blob | ArrayBuffer | Record<string, any>
 
-    invoke(data: Data, ctx?: Context): Promise<Data | void>
+    invoke(data: Data | Blob | ArrayBuffer, ctx?: Context): Promise<Data | Blob | ArrayBuffer | void>
 }
 
 export interface ServerRouter {
@@ -154,7 +154,7 @@ export class Server {
         } else {
             let result = new Result(0, "ok")
             try {
-                result.data = await router.invoke(router.formData(request.data!))
+                result.data = await router.invoke(router.formData(request.data!)) as Data
             } catch (e) {
                 if (Object.is(e, Result)) {
                     result = e as Result

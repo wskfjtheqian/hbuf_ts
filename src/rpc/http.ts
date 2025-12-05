@@ -64,13 +64,13 @@ export class HttpClientJson implements Client {
         this.responseInterceptor = new HttpResponseInterceptor(invoke, this.responseInterceptor)
     }
 
-    invoke<T>(serverName: string, serverId: number, name: string, id: number, req: Data, fromJson: (json: Record<string, any>) => T, fromData: (json:  Blob | ArrayBuffer) => T): Promise<T> {
+    invoke<T>(serverName: string, serverId: number, name: string, id: number, req: Data | Blob | ArrayBuffer, fromJson: (json: Record<string, any>) => T, fromData: (json: Blob | ArrayBuffer) => T): Promise<T> {
         return new Promise<T>((resolve, reject) => {
             let request = new XMLHttpRequest()
             request.open("POST", this.baseUrl + "/" + serverName + "/" + name, true)
             request.setRequestHeader('Content-Type', 'application/json');
 
-            this.requestInterceptor.invoke(request, JSON.stringify(req.toJson()), this.requestInterceptor.next)
+            this.requestInterceptor.invoke(request, JSON.stringify((req as Data).toJson()), this.requestInterceptor.next)
 
             request.onreadystatechange = () => {
                 if (request.readyState === 4) {

@@ -143,7 +143,7 @@ var Server = /** @class */ (function () {
                         _a = result;
                         return [4 /*yield*/, router.invoke(router.formData(request.data))];
                     case 3:
-                        _a.data = _b.sent();
+                        _a.data = (_b.sent());
                         return [3 /*break*/, 5];
                     case 4:
                         e_1 = _b.sent();
