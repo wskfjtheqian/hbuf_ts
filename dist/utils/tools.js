@@ -9,8 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -36,7 +36,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatDate = exports.isArray = exports.isRecord = exports.convertRecord = exports.RecordEntry = exports.convertArray = exports.waiting = void 0;
+exports.RecordEntry = void 0;
+exports.waiting = waiting;
+exports.convertArray = convertArray;
+exports.convertRecord = convertRecord;
+exports.isRecord = isRecord;
+exports.isArray = isArray;
+exports.formatDate = formatDate;
 //等待指定时间 （毫秒）
 function waiting(time) {
     return __awaiter(this, void 0, void 0, function () {
@@ -47,7 +53,6 @@ function waiting(time) {
         });
     });
 }
-exports.waiting = waiting;
 function convertArray(list, call) {
     if (null == list) {
         return null;
@@ -58,7 +63,6 @@ function convertArray(list, call) {
     }
     return ret;
 }
-exports.convertArray = convertArray;
 var RecordEntry = /** @class */ (function () {
     function RecordEntry(key, val) {
         this._key = key;
@@ -92,15 +96,12 @@ function convertRecord(record, call) {
     }
     return ret;
 }
-exports.convertRecord = convertRecord;
 function isRecord(o) {
     return Object.getPrototypeOf({}) === Object.getPrototypeOf(o);
 }
-exports.isRecord = isRecord;
 function isArray(o) {
     return Object.getPrototypeOf([]) === Object.getPrototypeOf(o);
 }
-exports.isArray = isArray;
 function formatDate(date, format) {
     if (!format)
         format = "yyyy-MM-dd";
@@ -132,4 +133,3 @@ function formatDate(date, format) {
     }
     return "" + date;
 }
-exports.formatDate = formatDate;

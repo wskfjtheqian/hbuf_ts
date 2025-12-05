@@ -29,7 +29,7 @@ export declare class WebsocketClientJson implements Client {
     addInterceptor(invoke: SocketInvoke): void;
     insertInterceptor(invoke: SocketInvoke): void;
     private socketInvoke;
-    invoke<T>(serverName: string, serverId: number, name: string, id: number, req: Data, fromJson: ((json: {}) => T) | null, fromData: ((json: BinaryData) => T) | null): Promise<T>;
+    invoke<T>(serverName: string, serverId: number, name: string, id: number, req: Data, fromJson: ((json: {}) => T) | null, fromData: ((json: Blob | ArrayBuffer) => T) | null): Promise<T>;
     connect(params?: Record<string, string[]>): Promise<void>;
     close(): void;
     private onMessage;

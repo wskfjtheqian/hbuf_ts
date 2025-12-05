@@ -14,7 +14,7 @@ export declare class Result implements Data {
     code: number;
     msg: string;
     data?: Data | void;
-    toData(): BinaryData;
+    toData(): Blob | ArrayBuffer;
     toJson(): Record<string, any>;
 }
 export declare class RpcData {
@@ -28,19 +28,19 @@ export declare class RpcData {
     toJson(): Record<string, any>;
 }
 export interface Client {
-    invoke<T>(serverName: string, serverId: number, name: string, id: number, req: Data, fromJson: ((json: {}) => T) | null, fromData: ((json: BinaryData) => T) | null): Promise<T>;
+    invoke<T>(serverName: string, serverId: number, name: string, id: number, req: Data, fromJson: ((json: {}) => T) | null, fromData: ((json: Blob | ArrayBuffer) => T) | null): Promise<T>;
 }
 export declare abstract class ServerClient {
     get client(): Client;
     abstract get name(): string;
     abstract get id(): number;
     private readonly _client;
-    protected invoke<T>(name: string, id: number, req: Data, fromJson: ((json: {}) => T) | null, fromData: ((json: BinaryData) => T) | null): Promise<T>;
+    protected invoke<T>(name: string, id: number, req: Data, fromJson: ((json: {}) => T) | null, fromData: ((json: Blob | ArrayBuffer) => T) | null): Promise<T>;
     protected constructor(client: Client);
 }
 export interface ServerInvoke {
-    formData(buf: BinaryData | Record<string, any>): Data;
-    toData(data: Data): BinaryData | Record<string, any>;
+    formData(buf: Blob | ArrayBuffer | Record<string, any>): Data;
+    toData(data: Data): Blob | ArrayBuffer | Record<string, any>;
     invoke(data: Data, ctx?: Context): Promise<Data | void>;
 }
 export interface ServerRouter {

@@ -91,7 +91,7 @@ export class WebsocketClientJson implements Client {
     }
 
 
-    invoke<T>(serverName: string, serverId: number, name: string, id: number, req: Data, fromJson: ((json: {}) => T) | null, fromData: ((json: BinaryData) => T) | null): Promise<T> {
+    invoke<T>(serverName: string, serverId: number, name: string, id: number, req: Data, fromJson: ((json: {}) => T) | null, fromData: ((json:  Blob | ArrayBuffer) => T) | null): Promise<T> {
         this.requestId++
         let header = new Map();
         let data = new RpcData(

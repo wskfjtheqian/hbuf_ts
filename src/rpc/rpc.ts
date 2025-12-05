@@ -22,7 +22,7 @@ export class Result implements Data {
     msg: string
     data?: Data | void
 
-    toData(): BinaryData {
+    toData():  Blob | ArrayBuffer {
         return new ArrayBuffer(0);
     }
 
@@ -70,7 +70,7 @@ export interface Client {
         id: number,
         req: Data,
         fromJson: ((json: {}) => T) | null,
-        fromData: ((json: BinaryData) => T) | null,
+        fromData: ((json:  Blob | ArrayBuffer) => T) | null,
     ): Promise<T>;
 }
 
@@ -90,7 +90,7 @@ export abstract class ServerClient {
         id: number,
         req: Data,
         fromJson: ((json: {}) => T) | null,
-        fromData: ((json: BinaryData) => T) | null,
+        fromData: ((json:  Blob | ArrayBuffer) => T) | null,
     ): Promise<T> {
         return this._client.invoke(
             this.name,
@@ -110,9 +110,9 @@ export abstract class ServerClient {
 
 
 export interface ServerInvoke {
-    formData(buf: BinaryData | Record<string, any>): Data
+    formData(buf:  Blob | ArrayBuffer | Record<string, any>): Data
 
-    toData(data: Data): BinaryData | Record<string, any>
+    toData(data: Data):  Blob | ArrayBuffer | Record<string, any>
 
     invoke(data: Data, ctx?: Context): Promise<Data | void>
 }

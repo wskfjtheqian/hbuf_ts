@@ -1,4 +1,4 @@
 export interface Data {
-    toData(): BinaryData;
+    toData(): Blob | ArrayBuffer;
     toJson(): Record<string, any>;
 }

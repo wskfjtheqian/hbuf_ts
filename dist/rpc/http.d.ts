@@ -21,7 +21,7 @@ export declare class HttpClientJson implements Client {
     insertRequestInterceptor(invoke: HttpRequestInvoke): void;
     addResponseInterceptor(invoke: HttpResponseInvoke): void;
     insertResponseInterceptor(invoke: HttpResponseInvoke): void;
-    invoke<T>(serverName: string, serverId: number, name: string, id: number, req: Data, fromJson: (json: Record<string, any>) => T, fromData: (json: BinaryData) => T): Promise<T>;
+    invoke<T>(serverName: string, serverId: number, name: string, id: number, req: Data, fromJson: (json: Record<string, any>) => T, fromData: (json: Blob | ArrayBuffer) => T): Promise<T>;
     private request;
     private response;
 }
