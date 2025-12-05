@@ -70,7 +70,7 @@ export interface Client {
         id: number,
         req: Data,
         fromJson: ((json: {}) => T) | null,
-        fromData: ((json:  Blob | ArrayBuffer) => T) | null,
+        fromData: ((json: ArrayBuffer) => T) | null,
     ): Promise<T>;
 }
 
@@ -90,7 +90,7 @@ export abstract class ServerClient {
         id: number,
         req: Data,
         fromJson: ((json: {}) => T) | null,
-        fromData: ((json:  Blob | ArrayBuffer) => T) | null,
+        fromData: ((json: ArrayBuffer) => T) | null,
     ): Promise<T> {
         return this._client.invoke(
             this.name,
