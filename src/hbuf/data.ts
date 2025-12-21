@@ -1,6 +1,8 @@
-export interface Data {
-    toData(): BinaryData
+export interface Descriptor {
 
-    toJson(): Record<string, any>
+}
+
+export class Data {
+
 }
 

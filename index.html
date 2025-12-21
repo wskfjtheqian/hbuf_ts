@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<script type="module" src="/src/hbuf/data.ts"></script>
+<script type="module" src="/src/hrpc/rpc.ts"></script>
+<script type="module" src="/src/hrpc/http.ts"></script>
+<script type="module">
+    import {Data} from "/src/hbuf/data.js"
+    import {Client} from "/src/hrpc/rpc.js"
+    import {HttpClient} from "/src/hrpc/http.js"
+
+    const http = new HttpClient("http://localhost:8080")
+    const client = new Client(http.request.bind(http))
+
+    client.Invoke(1, "service", "method", "tag", new Data({}), "data").then(res => {
+        console.log(res)
+    })
+</script>
+</body>
+</html>
