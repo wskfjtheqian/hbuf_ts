@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import {HttpClient} from "../src/hrpc/http";
-import {BufferType, Client, Context, Handler, Request, RequestType, ResponseType} from "../src/hrpc/rpc";
+import {BufferType, Client, Option, Handler, Request, RequestType, ResponseType} from "../src/hrpc/rpc";
 import {Data} from "../src/hbuf/data";
 
 
@@ -17,8 +17,8 @@ test.test("http client", (t) => {
     const client = new Client(http.request.bind(http), {
         middleware: [
             (next: Handler): Handler => {
-                return async (req: RequestType, ctx?: Context): Promise<ResponseType> => {
-                    return await next(req, ctx)
+                return async (req: RequestType, opt?: Option): Promise<ResponseType> => {
+                    return await next(req, opt)
                 }
             }
         ]

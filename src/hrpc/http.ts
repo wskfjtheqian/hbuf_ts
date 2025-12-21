@@ -1,16 +1,14 @@
-import {BufferType, Context, Request, RequestMiddleware} from "./rpc";
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+import {BufferType, Option, Request, RequestMiddleware} from "./rpc";
 
 export interface HttpClientOption {
     middleware?: RequestMiddleware[];
 }
 
 export class HttpClient {
-    base: string;
-    middleware: RequestMiddleware;
+    protected base: string;
+    protected middleware: RequestMiddleware;
 
-    constructor(base: string, option?: HttpClientOption) {
+    public constructor(base: string, option?: HttpClientOption) {
         this.base = base.replace(/^\/+|\/+$/g, "") + "/"
         this.middleware = (next: Request): Request => {
             for (let i = (option?.middleware?.length ?? 0) - 1; i >= 0; i--) {
@@ -20,19 +18,24 @@ export class HttpClient {
         }
     }
 
-    request(path: string, notification: boolean, callback: () => BufferType, ctx?: Context): Promise<ArrayBuffer> {
-        return this.middleware(async (path: string, notification: boolean, callback: () => BufferType): Promise<ArrayBuffer> => {
-            const res = await fetch(this.base + path, {
+    public request(path: string, notification: boolean, callback: () => BufferType, opt?: Option): Promise<ArrayBuffer> {
+        return this.middleware((path: string, notification: boolean, callback: () => BufferType): Promise<ArrayBuffer> => {
+            return this.fetch(this.base + path, {
                 method: "POST",
                 body: callback(),
-                headers: ctx?.headers,
+                headers: opt?.headers,
             })
-            if (res.ok) {
-                return res.arrayBuffer()
-            } else {
-                throw new Error(`HTTP Error: ${res.status} ${res.statusText}`)
-            }
+            
+
         })(path, notification, callback)
     }
 
+    protected async fetch(path: string, init: RequestInit): Promise<ArrayBuffer> {
+        const res = await fetch(this.base + path, init)
+        if (res.ok) {
+            return res.arrayBuffer()
+        } else {
+            throw new Error(`HTTP Error: ${res.status} ${res.statusText}`)
+        }
+    }
 }
