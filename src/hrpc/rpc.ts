@@ -5,7 +5,6 @@ export type BufferType = ArrayBuffer | Blob
 export type RequestType = BufferType | Data
 export type ResponseType = BufferType | Data
 
-
 export class Option {
     headers: Headers
     method: string
