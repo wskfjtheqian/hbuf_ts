@@ -1,4 +1,4 @@
-export type FromMap = (map: Record<string, any>) => Data
+export type FromMap = (map: Record<string, any>, tag: string) => Data
 
 export interface Descriptor {
 

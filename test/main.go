@@ -16,14 +16,16 @@ func main() {
 		println(string(buffer))
 
 		var response struct {
-			Code int         `json:"code"`
-			Msg  string      `json:"msg"`
-			Data interface{} `json:"data"`
+			Code int    `json:"code"`
+			Msg  string `json:"msg"`
+			Data struct {
+				Hello string `json:"hello"`
+			} `json:"data"`
 		}
 
-		response.Code = 12
+		response.Code = 0
 		response.Msg = "success"
-		response.Data = "success data"
+		response.Data.Hello = "Hello"
 		w.Header().Set("Content-Type", "application/json")
 		buffer, err = json.Marshal(response)
 		if err != nil {

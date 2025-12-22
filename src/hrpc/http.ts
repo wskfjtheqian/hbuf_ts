@@ -1,37 +1,40 @@
-import {BufferType, Option, Request, RequestMiddleware} from "./rpc";
+import {BufferType, Decoder, Encoder, NewJsonDecoder, NewJsonEncode, Option, RequestType, ResponseType} from "./rpc";
+import {Data, FromMap} from "../hbuf/data";
 
 export interface HttpClientOption {
-    middleware?: RequestMiddleware[];
+    decode?: Decoder
+    encode?: Encoder
 }
 
 export class HttpClient {
     protected base: string;
-    protected middleware: RequestMiddleware;
+    protected decode: Decoder
+    protected encode: Encoder
+
 
     public constructor(base: string, option?: HttpClientOption) {
         this.base = base.replace(/^\/+|\/+$/g, "") + "/"
-        this.middleware = (next: Request): Request => {
-            for (let i = (option?.middleware?.length ?? 0) - 1; i >= 0; i--) {
-                next = option!.middleware![i](next)
-            }
-            return next
+        this.decode = option?.decode ?? NewJsonDecoder()
+        this.encode = option?.encode ?? NewJsonEncode()
+
+    }
+
+    public async request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType> {
+        const body = req instanceof Data ? this.encode(req, (tag?.length ?? 0) > 0 ? "I" + tag : "") : req
+        const resp = await this.fetch(path, body, opt)
+        if (from) {
+            return this.decode(((resp instanceof Blob) ? await resp.arrayBuffer() : resp), from, tag)
+        } else {
+            return resp
         }
     }
 
-    public request(path: string, notification: boolean, callback: () => BufferType, opt?: Option): Promise<ArrayBuffer> {
-        return this.middleware((path: string, notification: boolean, callback: () => BufferType): Promise<ArrayBuffer> => {
-            return this.fetch(this.base + path, {
-                method: "POST",
-                body: callback(),
-                headers: opt?.headers,
-            })
-            
-
-        })(path, notification, callback)
-    }
-
-    protected async fetch(path: string, init: RequestInit): Promise<ArrayBuffer> {
-        const res = await fetch(this.base + path, init)
+    protected async fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType> {
+        const res = await fetch(this.base + path, {
+            method: "POST",
+            body: body,
+            headers: opt?.headers
+        })
         if (res.ok) {
             return res.arrayBuffer()
         } else {

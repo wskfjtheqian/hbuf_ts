@@ -16,7 +16,7 @@
     const http = new HttpClient("http://localhost:8080")
     const client = new Client(http.request.bind(http))
 
-    client.Invoke(1, "service", "method", "tag", new Data({}), "data").then(res => {
+    client.invoke(1, "service", "method", "tag", new Data({}), "data").then(res => {
         console.log(res)
     })
 </script>

@@ -2,8 +2,8 @@
 import {Data, FromMap} from "../hbuf/data";
 
 export type BufferType = ArrayBuffer | Blob
-export type RequestType = BufferType | Data
-export type ResponseType = BufferType | Data
+export type RequestType = BufferType | Data | undefined
+export type ResponseType = BufferType | Data | undefined
 
 export class Option {
     headers: Headers
@@ -24,9 +24,7 @@ export type Encoder = (v: Data, tag: string) => ArrayBuffer
 
 export type Decoder = (reader: ArrayBuffer, from: FromMap, tag: string) => Data
 
-export type Request = (path: string, notification: boolean, callback: () => BufferType, opt?: Option) => Promise<ArrayBuffer>
-
-export type RequestMiddleware = (next: Request) => Request
+export type Request = (path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option) => Promise<ResponseType>
 
 
 export class Error extends Data {
@@ -45,33 +43,43 @@ export class Error extends Data {
 }
 
 export class Result extends Error {
-    constructor(code: number, msg: string, data: Data) {
+    data?: Data
+    from?: FromMap;
+
+    constructor(code: number, msg: string, data?: Data, from?: FromMap) {
         super(code, msg);
         this.data = data;
+        this.from = from;
     }
-
-    data: Data
 
     public toMap(tag: string): Record<string, any> {
         return {
             ...super.toMap(tag),
-            data: this.data.toMap(tag)
+            data: this.data?.toMap(tag)
         };
+    }
+
+    fromMap(map: Record<string, any>, tag: string): Result {
+        return new Result(
+            map.code,
+            map.msg,
+            this.from?.call(this, map.data as Record<string, any>, tag),
+        );
     }
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-function NewJsonDecoder(): Decoder {
+export function NewJsonDecoder(): Decoder {
     const decoder = new TextDecoder('utf-8');
     return (buffer: ArrayBuffer, from: FromMap, tag: string): Data => {
         const str = decoder.decode(buffer);
-        return from(JSON.parse(str) as Data)
+        return from(JSON.parse(str) as Data, tag)
     }
 }
 
-function NewJsonEncode(): Encoder {
+export function NewJsonEncode(): Encoder {
     const encoder = new TextEncoder();
     return (v: Data, tag: string): ArrayBuffer => {
         const str = JSON.stringify(v.toMap(tag))
@@ -82,21 +90,18 @@ function NewJsonEncode(): Encoder {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export interface ClientOption {
-    decode?: Decoder
-    encode?: Encoder
+
     middleware?: HandlerMiddleware[]
 }
 
 export class Client {
     request: Request
-    decode: Decoder
-    encode: Encoder
+
     middleware: HandlerMiddleware
 
     constructor(request: Request, option?: ClientOption) {
         this.request = request;
-        this.decode = option?.decode ?? NewJsonDecoder()
-        this.encode = option?.encode ?? NewJsonEncode()
+
         this.middleware = (next: Handler): Handler => {
             for (let i = (option?.middleware?.length ?? 0) - 1; i >= 0; i--) {
                 next = option!.middleware![i](next)
@@ -105,25 +110,18 @@ export class Client {
         }
     }
 
-    public Invoke(id: number, name: string, method: string, tag: string, request: RequestType, from?: FromMap): Promise<ResponseType> {
+    public invoke(id: number, name: string, method: string, tag: string, request: RequestType, from?: FromMap): Promise<ResponseType> {
         name = name.replace(/^\/+|\/+$/g, "") + "/"
         return this.middleware(async (req: RequestType, opt?: Option): Promise<ResponseType> => {
-            const reader = await this.request(name + method, false, (): BufferType => {
-                if (req instanceof Data) {
-                    return this.encode(req as Data, tag.length > 0 ? "I" + tag : "")
-                } else {
-                    return req as BufferType
-                }
-            }, opt)
+            const result = new Result(0, "ok", undefined, from)
+            const resp = await this.request(name + method, true, req, tag, from && result.fromMap.bind(result), opt)
             if (from) {
-                const ret = this.decode(reader as ArrayBuffer, from, "") as Result
-                if (ret.code != 0) {
-                    throw ret
+                if ((resp as Result).code !== 0) {
+                    throw resp
                 }
-                return ret.data
-            } else {
-                return reader
+                return (resp as Result).data
             }
+            return resp
         })(request, new Option(method, new Headers()))
     }
 }
@@ -136,7 +134,7 @@ export interface Method {
     name: string
     handler: Handler
     withContext: (opt: Option) => Option
-    decode: (decoder: (v: ArrayBuffer) => (Data)) => Data
+    from: FromMap;
     tag: string
 }
 
@@ -173,27 +171,13 @@ export class Server {
         }
     }
 
-    public async response(path: string, req: RequestType, from: FromMap): Promise<BufferType> {
+    public async response(path: string, req: ArrayBuffer | Record<string, any>): Promise<ResponseType> {
         const method = this.methods[path]
         if (!method) {
             throw new Error(-1, "Method not found")
         }
 
-        const val = !method.decode ? req : method.decode((v: ArrayBuffer): Data => {
-            return this.decode(v, from, method.tag?.length > 0 ? "I" + method.tag : "")
-        })
-        try {
-            const response: ResponseType = await this.middleware(method.handler)(val)
-            if (response instanceof Data) {
-                return this.encode(new Result(0, "ok", response), method.tag?.length > 0 ? "O" + method.tag : "")
-            }
-            return response
-        } catch (e) {
-            if (e instanceof Error) {
-                return this.encode(e, "")
-            } else {
-                return this.encode(new Error(0, "ok"), "")
-            }
-        }
+        const val = !method.from ? req : method.from(req, method.tag?.length > 0 ? "I" + method.tag : "")
+        return await this.middleware(method.handler)(val as ArrayBuffer | Data)
     }
 }
