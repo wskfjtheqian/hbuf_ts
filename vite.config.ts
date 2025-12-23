@@ -11,7 +11,7 @@ export default defineConfig({
         outDir: 'dist',
         lib: {
             entry: resolve(__dirname, 'src/index.ts'),
-            name: 'Hbuf',
+            name: 'hbuf',
             fileName: (format) => `index.${format}.js`,
             formats: ['es', 'umd'] // es 给模块化环境；umd 给浏览器 script 直接引用
         },

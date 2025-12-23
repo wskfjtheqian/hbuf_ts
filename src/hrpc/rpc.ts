@@ -5,14 +5,9 @@ export type BufferType = ArrayBuffer | Blob
 export type RequestType = BufferType | Data | undefined
 export type ResponseType = BufferType | Data | undefined
 
-export class Option {
+export interface Option {
     headers: Headers
     method: string
-
-    constructor(method: string, headers: Headers) {
-        this.headers = headers;
-        this.method = method;
-    }
 }
 
 export type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>
@@ -122,7 +117,7 @@ export class Client {
                 return (resp as Result).data
             }
             return resp
-        })(request, new Option(method, new Headers()))
+        })(request, {method: method, headers: new Headers()})
     }
 }
 
