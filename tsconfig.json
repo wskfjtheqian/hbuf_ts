@@ -1,13 +1,48 @@
 {
   "compilerOptions": {
-    "declaration": true,
-    "declarationDir": "dist/types",
-    "emitDeclarationOnly": false,
-    "outDir": "dist",
-    "module": "ESNext",
+    // 指定 ECMAScript 目标版本，这里是 ES2020
     "target": "ES2020",
+
+    // 指定模块系统，这里使用 ESNext 模块
+    "module": "ESNext",
+
+    // 指定需要包含在编译中的库，这里包括 ES2020 标准库和浏览器 DOM 类型
+    "lib": ["ES2020", "DOM"],
+
+    // 生成对应的声明文件 (.d.ts)
+    "declaration": true,
+
+    // 生成声明文件映射文件 (.d.ts.map)，便于调试
+    "declarationMap": true,
+
+    // 是否只生成声明文件，这里设置为 false，表示会生成 JS 文件
+    "emitDeclarationOnly": false,
+
+    // 指定输出目录，编译后的文件会放到 dist 文件夹
+    "outDir": "dist",
+
+    // 指定项目的根目录，TypeScript 会从这里开始编译
+    "rootDir": "src",
+
+    // 启用所有严格类型检查选项
+    "strict": true,
+
+    // 允许在 CommonJS 模块和 ES 模块之间进行默认导入互操作
+    "esModuleInterop": true,
+
+    // 跳过库文件的类型检查，提升编译速度
+    "skipLibCheck": true,
+
+    // 指定模块解析策略，这里使用 "Bundler" 模块解析（适合现代打包工具）
     "moduleResolution": "Bundler",
-    "strict": true
+
+//    // 保留原始的模块语法，不自动转换 import/export
+//    "verbatimModuleSyntax": true,
+//
+//    // 当 import 的模块只用于类型时，如果未使用会报错
+//    "importsNotUsedAsValues": "error"
   },
+
+  // 指定要包含在编译中的文件或文件夹，这里是 src 文件夹
   "include": ["src"]
 }

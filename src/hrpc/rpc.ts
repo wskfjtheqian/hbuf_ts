@@ -1,9 +1,8 @@
-// Handler 是用于处理RPC请求
 import {Data, FromMap} from "../hbuf/data";
 
 export type BufferType = ArrayBuffer | Blob
-export type RequestType = BufferType | Data | undefined
-export type ResponseType = BufferType | Data | undefined
+export type RequestType = BufferType | Data | undefined | void
+export type ResponseType = BufferType | Data | undefined | void
 
 export interface Option {
     headers: Headers
@@ -58,7 +57,7 @@ export class Result extends Error {
         return new Result(
             map.code,
             map.msg,
-            this.from?.call(this, map.data as Record<string, any>, tag),
+            map.data && this.from?.call(this, map.data as Record<string, any>, tag),
         );
     }
 }
@@ -105,7 +104,7 @@ export class Client {
         }
     }
 
-    public invoke(id: number, name: string, method: string, tag: string, request: RequestType, from?: FromMap): Promise<ResponseType> {
+    public invoke<T extends ResponseType>(name: string, id: number, method: string, tag: string, request: RequestType, from?: FromMap): Promise<T> {
         name = name.replace(/^\/+|\/+$/g, "") + "/"
         return this.middleware(async (req: RequestType, opt?: Option): Promise<ResponseType> => {
             const result = new Result(0, "ok", undefined, from)
@@ -116,8 +115,8 @@ export class Client {
                 }
                 return (resp as Result).data
             }
-            return resp
-        })(request, {method: method, headers: new Headers()})
+            return resp as T
+        })(request, {method: method, headers: new Headers()}) as Promise<T>
     }
 }
 
@@ -128,7 +127,7 @@ export interface Method {
     id: number
     name: string
     handler: Handler
-    withContext: (opt: Option) => Option
+    withContext: (opt?: Option) => Option | undefined
     from: FromMap;
     tag: string
 }
@@ -163,6 +162,15 @@ export class Server {
         for (const method of methods) {
             const key = method.name.replace(/|\/+$/g, "")
             this.methods[name + key] = method
+        }
+    }
+
+    public unRegister(id: number, name: string): void {
+        name = name.replace(/^\/+|\/+$/g, "") + "/"
+        for (const key in this.methods) {
+            if (key.startsWith(name)) {
+                delete this.methods[key]
+            }
         }
     }
 

@@ -1,26 +1,32 @@
 {
   "name": "hbuf_ts",
-  "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "hbuf RPC TypeScript SDK",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build && npx tsc",
-    "preview": "vite preview"
-  },
-  "module": "dist/index.js",
-  "types": "dist/types/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "types": "./dist/types/index.d.ts"
+      "require": "./dist/index.cjs"
     }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
-    "vite": "^7.1.7"
+    "tsup": "^8.5.1"
   }
 }

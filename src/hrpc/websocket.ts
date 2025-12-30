@@ -1,26 +1,24 @@
-import {Decoder, Encoder, NewJsonDecoder, NewJsonEncode, Option, RequestType, ResponseType, Server} from "./rpc";
 import {Data, FromMap} from "../hbuf/data";
+import {Decoder, Encoder, NewJsonDecoder, NewJsonEncode, Option, RequestType, ResponseType, Server} from "./rpc";
 
 
 export enum RpcType {
     Request = 0,
     Response = 1,
     Notification = 2,
-    AuthSuccess = 3,
-    AuthFailure = 4,
-    Ping,
-    Pong
+    Ping = 3,
+    Pong = 4,
 }
 
 export class WebSocketData {
     type: RpcType
-    header: Record<string, string[]> = {}
+    header?: Record<string, string[]>
     data?: ArrayBuffer | Data
-    id: number
-    path: string
-    status: number = 0
+    id?: number
+    path?: string
+    status?: number
 
-    constructor(type: RpcType, id: number, path: string, data?: ArrayBuffer | Data) {
+    constructor(type: RpcType, id?: number, path?: string, data?: ArrayBuffer | Data) {
         this.type = type;
         this.id = id;
         this.path = path;
@@ -74,7 +72,7 @@ export class WebSocketClient {
     protected server?: Server
     protected readTimeout: number = 30000;
     protected heartbeat: number = 30000;
-    protected interval: number | null = null;
+    protected interval: NodeJS.Timeout | null = null;
     protected headTimeout: boolean = false;
     protected decode: Decoder
     protected encode: Encoder
@@ -91,13 +89,17 @@ export class WebSocketClient {
 
     public async request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType> {
         this.requestId++
-        let header = new Map();
         let data = new WebSocketData(
             notification ? RpcType.Notification : RpcType.Request,
             this.requestId,
             path,
         )
-
+        if (opt?.headers) {
+            data.header = {}
+            opt.headers.forEach((value: string, key: string, parent: Headers): void => {
+                data.header![key] = (data.header![key] || []).concat(value);
+            });
+        }
         if (req instanceof Blob) {
             req = await req.arrayBuffer()
         }
@@ -106,18 +108,18 @@ export class WebSocketClient {
 
         data = await new Promise<WebSocketData>((resolve, reject) => {
             let promise = new FetchPromise((value) => {
-                if (this.requestMap.delete(data.id)) {
+                if (this.requestMap.delete(data.id!)) {
                     resolve(value)
                 }
             }, (e) => {
-                if (this.requestMap.delete(data.id)) {
+                if (this.requestMap.delete(data.id!)) {
                     reject(e)
                 }
             })
             setTimeout(() => {
                 reject("timeout")
             }, this.readTimeout)
-            this.requestMap.set(data.id, promise)
+            this.requestMap.set(data.id!, promise)
         })
         try {
             this.socket?.send(body)
@@ -132,21 +134,13 @@ export class WebSocketClient {
     }
 
 
-    public connect(params?: Record<string, string[]>): Promise<void> {
+    public connect(protocols?: string | string[]): Promise<void> {
         let url = this.baseUrl
-        let temp = ""
-        if (params) {
-            for (const key in params) {
-                for (const index in params[key]) {
-                    temp += "&" + encodeURIComponent(key) + "=" + encodeURIComponent(params[key][index])
-                }
-            }
-        }
-        return new Promise((resolve, r) => {
+        return new Promise((resolve: (value: void | PromiseLike<void>) => void, r: (reason?: any) => void) => {
             let reject: ((reason?: any) => void) | null = r
             clearInterval(this.interval ?? 0)
             try {
-                this.socket = new WebSocket(url, [encodeURIComponent(temp)])
+                this.socket = new WebSocket(url, protocols)
                 this.socket.onclose = (event) => {
                     clearInterval(this.interval ?? 0)
                     this.onclose?.call(this, event.reason)
@@ -163,9 +157,10 @@ export class WebSocketClient {
                         console.log(e)
                     }
                 }
-                // this.socket.onopen = (event) => {
-                //     this.interval = setInterval(() => this.onHeartbeat(), this.heartbeat)
-                // }
+                this.socket.onopen = (event) => {
+                    this.interval = setInterval(() => this.onHeartbeat(), this.heartbeat)
+                    resolve()
+                }
             } catch (e) {
                 reject?.call(this, e)
                 reject = null
@@ -184,10 +179,13 @@ export class WebSocketClient {
 
         if (response.type == RpcType.Response) {
             if (response.status == 200) {
-                this.requestMap.get(response.id)?.resolve(response)
+                this.requestMap.get(response.id!)?.resolve(response)
             } else {
-                this.requestMap.get(response.id)?.reject(response)
+                this.requestMap.get(response.id!)?.reject(response)
             }
+        } else if (response.type == RpcType.Ping) {
+            const data = new WebSocketData(RpcType.Pong)
+            this.socket?.send(this.encode(data, ""))
         } else if (response.type == RpcType.Request || response.type == RpcType.Notification) {
             await this.onRequest(response, response.type == RpcType.Notification)
         }
@@ -195,7 +193,7 @@ export class WebSocketClient {
 
     private async onRequest(request: WebSocketData, broadcast: boolean) {
         if (broadcast) {
-            this.server?.response(request.path, request.data as ArrayBuffer)
+            this.server?.response(request.path!, request.data as ArrayBuffer)
             return
         }
         let data = new WebSocketData(
@@ -204,7 +202,7 @@ export class WebSocketClient {
             request.path,
         )
         if (this.server) {
-            let resp = await this.server?.response(request.path, request.data as ArrayBuffer)
+            let resp = await this.server?.response(request.path!, request.data as ArrayBuffer)
             if (resp instanceof Blob) {
                 resp = await resp.arrayBuffer()
             }
@@ -212,21 +210,20 @@ export class WebSocketClient {
         } else {
             data.status = 404
         }
-        this.socket?.send(this.encode(data, (request.path.length ?? 0) > 0 ? "I" + request.path : ""))
+        this.socket?.send(this.encode(data, (request.path?.length ?? 0) > 0 ? "I" + request.path : ""))
     }
 
-    // private onHeartbeat() {
-    //     if (this.socket?.OPEN) {
-    //         if (this.headTimeout) {
-    //             this.socket.close()
-    //             clearInterval(this.interval ?? 0)
-    //             this.onclose?.call(this, "timeout")
-    //             return
-    //         }
-    //         this.socket.send(this.encoder.encode(JSON.stringify({
-    //             type: RpcType.Notification
-    //         })))
-    //         this.headTimeout = true
-    //     }
-    // }
+    private onHeartbeat() {
+        if (this.socket?.OPEN) {
+            if (this.headTimeout) {
+                this.socket.close()
+                clearInterval(this.interval ?? 0)
+                this.onclose?.call(this, "timeout")
+                return
+            }
+            const data = new WebSocketData(RpcType.Ping)
+            this.socket.send(this.encode(data, ""))
+            this.headTimeout = true
+        }
+    }
 }

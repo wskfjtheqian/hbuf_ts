@@ -1,3 +1,46 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/index.ts
+var index_exports = {};
+__export(index_exports, {
+  Client: () => Client,
+  Data: () => Data,
+  Error: () => Error2,
+  HttpClient: () => http_default,
+  NewJsonDecoder: () => NewJsonDecoder,
+  NewJsonEncode: () => NewJsonEncode,
+  RecordEntry: () => RecordEntry,
+  Result: () => Result,
+  Server: () => Server,
+  WebSocketClient: () => WebSocketClient,
+  WebSocketData: () => WebSocketData,
+  convertArray: () => convertArray,
+  convertRecord: () => convertRecord,
+  default: () => index_default,
+  formatDate: () => formatDate,
+  isArray: () => isArray,
+  isRecord: () => isRecord,
+  waiting: () => waiting
+});
+module.exports = __toCommonJS(index_exports);
+
 // src/hbuf/data.ts
 var Data = class {
 };
@@ -417,11 +460,12 @@ var index_default = {
   isArray,
   formatDate
 };
-export {
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
   Client,
   Data,
-  Error2 as Error,
-  http_default as HttpClient,
+  Error,
+  HttpClient,
   NewJsonDecoder,
   NewJsonEncode,
   RecordEntry,
@@ -431,10 +475,9 @@ export {
   WebSocketData,
   convertArray,
   convertRecord,
-  index_default as default,
   formatDate,
   isArray,
   isRecord,
   waiting
-};
-//# sourceMappingURL=index.js.map
+});
+//# sourceMappingURL=index.cjs.map

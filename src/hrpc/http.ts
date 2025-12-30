@@ -1,12 +1,13 @@
 import {BufferType, Decoder, Encoder, NewJsonDecoder, NewJsonEncode, Option, RequestType, ResponseType} from "./rpc";
 import {Data, FromMap} from "../hbuf/data";
 
+
 export interface HttpClientOption {
     decode?: Decoder
     encode?: Encoder
 }
 
-export class HttpClient {
+class HttpClient {
     protected base: string;
     protected decode: Decoder
     protected encode: Encoder
@@ -42,3 +43,5 @@ export class HttpClient {
         }
     }
 }
+
+export default HttpClient
