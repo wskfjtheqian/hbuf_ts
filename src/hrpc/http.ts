@@ -1,5 +1,6 @@
 import {BufferType, Decoder, Encoder, NewJsonDecoder, NewJsonEncode, Option, RequestType, ResponseType} from "./rpc";
 import {Data, FromMap} from "../hbuf/data";
+import {isData} from "../utils/tools";
 
 
 export interface HttpClientOption {
@@ -21,7 +22,7 @@ class HttpClient {
     }
 
     public async request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType> {
-        const body = req instanceof Data ? this.encode(req, (tag?.length ?? 0) > 0 ? "I" + tag : "") : req
+        const body = isData(req) ? this.encode(req as Data, (tag?.length ?? 0) > 0 ? "I" + tag : "") : req as BufferType
         const resp = await this.fetch(path, body, opt)
         if (from) {
             return this.decode(((resp instanceof Blob) ? await resp.arrayBuffer() : resp), from, tag)

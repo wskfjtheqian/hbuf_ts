@@ -158,7 +158,7 @@ export class Server {
     }
 
     public register(id: number, name: string, methods: Method[]): void {
-        name = name.replace(/^\/+|\/+$/g, "") + "/"
+        name = "/" + name.replace(/^\/+|\/+$/g, "") + "/"
         for (const method of methods) {
             const key = method.name.replace(/|\/+$/g, "")
             this.methods[name + key] = method
@@ -166,7 +166,7 @@ export class Server {
     }
 
     public unRegister(id: number, name: string): void {
-        name = name.replace(/^\/+|\/+$/g, "") + "/"
+        name = "/" + name.replace(/^\/+|\/+$/g, "") + "/"
         for (const key in this.methods) {
             if (key.startsWith(name)) {
                 delete this.methods[key]

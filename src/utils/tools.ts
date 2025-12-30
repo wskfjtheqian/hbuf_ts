@@ -84,3 +84,8 @@ export function formatDate(date: Date | string | number, format?: string): strin
     }
     return "" + date
 }
+
+export function isData(obj: any): boolean {
+    return obj && typeof obj.toMap === 'function';
+}
+

@@ -85,14 +85,14 @@ var Server = class {
     };
   }
   register(id, name, methods) {
-    name = name.replace(/^\/+|\/+$/g, "") + "/";
+    name = "/" + name.replace(/^\/+|\/+$/g, "") + "/";
     for (const method of methods) {
       const key = method.name.replace(/|\/+$/g, "");
       this.methods[name + key] = method;
     }
   }
   unRegister(id, name) {
-    name = name.replace(/^\/+|\/+$/g, "") + "/";
+    name = "/" + name.replace(/^\/+|\/+$/g, "") + "/";
     for (const key in this.methods) {
       if (key.startsWith(name)) {
         delete this.methods[key];
@@ -109,6 +109,85 @@ var Server = class {
   }
 };
 
+// src/utils/tools.ts
+async function waiting(time) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => resolve(), Math.max(time, 0));
+  });
+}
+function convertArray(list, call) {
+  if (null == list) {
+    return null;
+  }
+  let ret = new Array(list.length);
+  for (const key in list) {
+    ret[key] = call(list[key]);
+  }
+  return ret;
+}
+var RecordEntry = class {
+  get val() {
+    return this._val;
+  }
+  get key() {
+    return this._key;
+  }
+  constructor(key, val) {
+    this._key = key;
+    this._val = val;
+  }
+};
+function convertRecord(record, call) {
+  if (null == record) {
+    return null;
+  }
+  let ret = {};
+  for (const key in record) {
+    let val = call(key, record[key]);
+    ret[val.key] = val.val;
+  }
+  return ret;
+}
+function isRecord(o) {
+  return Object.getPrototypeOf({}) === Object.getPrototypeOf(o);
+}
+function isArray(o) {
+  return Object.getPrototypeOf([]) === Object.getPrototypeOf(o);
+}
+function formatDate(date, format) {
+  if (!format) format = "yyyy-MM-dd";
+  switch (typeof date) {
+    case "string":
+      date = new Date(date.replace(/-/g, "/"));
+      break;
+    case "number":
+      date = new Date(date);
+      break;
+  }
+  if (date instanceof Date) {
+    const dict = {
+      yyyy: date.getFullYear(),
+      M: date.getMonth() + 1,
+      d: date.getDate(),
+      H: date.getHours(),
+      m: date.getMinutes(),
+      s: date.getSeconds(),
+      MM: ("" + (date.getMonth() + 101)).substr(1),
+      dd: ("" + (date.getDate() + 100)).substr(1),
+      HH: ("" + (date.getHours() + 100)).substr(1),
+      mm: ("" + (date.getMinutes() + 100)).substr(1),
+      ss: ("" + (date.getSeconds() + 100)).substr(1)
+    };
+    return format.replace(/(yyyy|MM?|dd?|HH?|ss?|mm?)/g, function() {
+      return dict[arguments[0]];
+    });
+  }
+  return "" + date;
+}
+function isData(obj) {
+  return obj && typeof obj.toMap === "function";
+}
+
 // src/hrpc/http.ts
 var HttpClient = class {
   constructor(base, option) {
@@ -117,7 +196,7 @@ var HttpClient = class {
     this.encode = option?.encode ?? NewJsonEncode();
   }
   async request(path, notification, req, tag, from, opt) {
-    const body = req instanceof Data ? this.encode(req, (tag?.length ?? 0) > 0 ? "I" + tag : "") : req;
+    const body = isData(req) ? this.encode(req, (tag?.length ?? 0) > 0 ? "I" + tag : "") : req;
     const resp = await this.fetch(path, body, opt);
     if (from) {
       return this.decode(resp instanceof Blob ? await resp.arrayBuffer() : resp, from, tag);
@@ -321,82 +400,6 @@ var WebSocketClient = class {
   }
 };
 
-// src/utils/tools.ts
-async function waiting(time) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => resolve(), Math.max(time, 0));
-  });
-}
-function convertArray(list, call) {
-  if (null == list) {
-    return null;
-  }
-  let ret = new Array(list.length);
-  for (const key in list) {
-    ret[key] = call(list[key]);
-  }
-  return ret;
-}
-var RecordEntry = class {
-  get val() {
-    return this._val;
-  }
-  get key() {
-    return this._key;
-  }
-  constructor(key, val) {
-    this._key = key;
-    this._val = val;
-  }
-};
-function convertRecord(record, call) {
-  if (null == record) {
-    return null;
-  }
-  let ret = {};
-  for (const key in record) {
-    let val = call(key, record[key]);
-    ret[val.key] = val.val;
-  }
-  return ret;
-}
-function isRecord(o) {
-  return Object.getPrototypeOf({}) === Object.getPrototypeOf(o);
-}
-function isArray(o) {
-  return Object.getPrototypeOf([]) === Object.getPrototypeOf(o);
-}
-function formatDate(date, format) {
-  if (!format) format = "yyyy-MM-dd";
-  switch (typeof date) {
-    case "string":
-      date = new Date(date.replace(/-/g, "/"));
-      break;
-    case "number":
-      date = new Date(date);
-      break;
-  }
-  if (date instanceof Date) {
-    const dict = {
-      yyyy: date.getFullYear(),
-      M: date.getMonth() + 1,
-      d: date.getDate(),
-      H: date.getHours(),
-      m: date.getMinutes(),
-      s: date.getSeconds(),
-      MM: ("" + (date.getMonth() + 101)).substr(1),
-      dd: ("" + (date.getDate() + 100)).substr(1),
-      HH: ("" + (date.getHours() + 100)).substr(1),
-      mm: ("" + (date.getMinutes() + 100)).substr(1),
-      ss: ("" + (date.getSeconds() + 100)).substr(1)
-    };
-    return format.replace(/(yyyy|MM?|dd?|HH?|ss?|mm?)/g, function() {
-      return dict[arguments[0]];
-    });
-  }
-  return "" + date;
-}
-
 // src/index.ts
 var index_default = {
   Data,
@@ -415,7 +418,8 @@ var index_default = {
   convertRecord,
   isRecord,
   isArray,
-  formatDate
+  formatDate,
+  isData
 };
 export {
   Client,
@@ -434,6 +438,7 @@ export {
   index_default as default,
   formatDate,
   isArray,
+  isData,
   isRecord,
   waiting
 };
