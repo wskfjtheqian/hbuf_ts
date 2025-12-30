@@ -1,7 +1,7 @@
 import {Data, FromMap} from "../hbuf/data";
 
 export type BufferType = ArrayBuffer | Blob
-export type RequestType = BufferType | Data | undefined | void
+export type RequestType = BufferType | Data | undefined
 export type ResponseType = BufferType | Data | undefined | void
 
 export interface Option {
@@ -104,7 +104,7 @@ export class Client {
         }
     }
 
-    public invoke<T extends ResponseType>(name: string, id: number, method: string, tag: string, request: RequestType, from?: FromMap): Promise<T> {
+    public invoke<T extends ResponseType>(id: number, name: string, method: string, tag: string, request: RequestType, from?: FromMap): Promise<T> {
         name = name.replace(/^\/+|\/+$/g, "") + "/"
         return this.middleware(async (req: RequestType, opt?: Option): Promise<ResponseType> => {
             const result = new Result(0, "ok", undefined, from)
@@ -128,7 +128,7 @@ export interface Method {
     name: string
     handler: Handler
     withContext: (opt?: Option) => Option | undefined
-    from: FromMap;
+    from?: FromMap;
     tag: string
 }
 

@@ -1,7 +1,6 @@
 import {test} from "node:test";
-import {HttpClient} from "../src/hrpc/http";
-import {Client, Handler, Option, RequestType, ResponseType} from "../src/hrpc/rpc";
-import {Data} from "../src/hbuf/data";
+import {Client, Data, Handler, HttpClient, Option, RequestType} from "../src";
+
 
 
 class TextRequest extends Data {

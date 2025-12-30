@@ -13,7 +13,7 @@ export enum RpcType {
 export class WebSocketData {
     type: RpcType
     header?: Record<string, string[]>
-    data?: ArrayBuffer | Data
+    data?: ArrayBuffer | Data | void
     id?: number
     path?: string
     status?: number
