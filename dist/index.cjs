@@ -199,7 +199,7 @@ function isArray(o) {
   return Object.getPrototypeOf([]) === Object.getPrototypeOf(o);
 }
 function formatDate(date, format) {
-  if (!format) format = "yyyy-MM-dd";
+  if (!format) format = "YYYY-MM-DD";
   switch (typeof date) {
     case "string":
       date = new Date(date.replace(/-/g, "/"));
@@ -210,19 +210,21 @@ function formatDate(date, format) {
   }
   if (date instanceof Date) {
     const dict = {
-      yyyy: date.getFullYear(),
+      YYYY: date.getFullYear(),
       M: date.getMonth() + 1,
-      d: date.getDate(),
+      D: date.getDate(),
       H: date.getHours(),
       m: date.getMinutes(),
       s: date.getSeconds(),
-      MM: ("" + (date.getMonth() + 101)).substr(1),
-      dd: ("" + (date.getDate() + 100)).substr(1),
-      HH: ("" + (date.getHours() + 100)).substr(1),
-      mm: ("" + (date.getMinutes() + 100)).substr(1),
-      ss: ("" + (date.getSeconds() + 100)).substr(1)
+      S: date.getMilliseconds(),
+      MM: ("" + (date.getMonth() + 101)).substring(1),
+      DD: ("" + (date.getDate() + 100)).substring(1),
+      HH: ("" + (date.getHours() + 100)).substring(1),
+      mm: ("" + (date.getMinutes() + 100)).substring(1),
+      ss: ("" + (date.getSeconds() + 100)).substring(1),
+      SS: ("" + (date.getMilliseconds() + 100)).substring(1)
     };
-    return format.replace(/(yyyy|MM?|dd?|HH?|ss?|mm?)/g, function() {
+    return format.replace(/(YYYY|MM?|DD?|HH?|ss?|mm?|SS?)/g, function() {
       return dict[arguments[0]];
     });
   }
