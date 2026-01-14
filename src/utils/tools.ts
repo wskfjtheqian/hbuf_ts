@@ -13,6 +13,7 @@ export function convertArray<T, E>(list: T[] | null, call: (item: T) => E): E[] 
     for (const key in list) {
         ret[key] = call(list[key])
     }
+
     return ret
 }
 
