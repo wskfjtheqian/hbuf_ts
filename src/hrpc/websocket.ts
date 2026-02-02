@@ -14,11 +14,11 @@ export class WebSocketData {
     type: RpcType
     header?: Record<string, string[]>
     data?: ArrayBuffer | Data | void
-    id?: number
+    id?: bigint
     path?: string
     status?: number
 
-    constructor(type: RpcType, id?: number, path?: string, data?: ArrayBuffer | Data) {
+    constructor(type: RpcType, id?: bigint, path?: string, data?: ArrayBuffer | Data) {
         this.type = type;
         this.id = id;
         this.path = path;
@@ -28,16 +28,17 @@ export class WebSocketData {
         return {
             type: this.type,
             header: this.header,
-            id: this.id,
+            id: this.id?.toString(),
             path: this.path,
             status: this.status,
+            data: this.data,
         }
     }
 
     public static fromMap(map: Record<string, any>, tag: string): WebSocketData {
         const ret = new WebSocketData(
             map.type,
-            map.id,
+            map.id === undefined ? undefined : BigInt(map.id),
             map.path,
         )
         ret.header = map.header
@@ -67,8 +68,8 @@ export interface WebSocketClientOption {
 export class WebSocketClient {
     protected baseUrl: string;
     protected socket?: WebSocket;
-    protected requestId: number = 0
-    protected requestMap: Map<number, FetchPromise> = new Map<number, FetchPromise>()
+    protected requestId: bigint = 0n
+    protected requestMap: Map<bigint, FetchPromise> = new Map<bigint, FetchPromise>()
     protected server?: Server
     protected readTimeout: number = 30000;
     protected heartbeat: number = 30000;
@@ -106,7 +107,7 @@ export class WebSocketClient {
         data.data = req
         const body = this.encode(data, (tag?.length ?? 0) > 0 ? "I" + tag : "")
 
-        data = await new Promise<WebSocketData>((resolve, reject) => {
+        const promise = new Promise<WebSocketData>((resolve, reject) => {
             let promise = new FetchPromise((value) => {
                 if (this.requestMap.delete(data.id!)) {
                     resolve(value)
@@ -116,17 +117,18 @@ export class WebSocketClient {
                     reject(e)
                 }
             })
-            setTimeout(() => {
-                reject("timeout")
-            }, this.readTimeout)
-            this.requestMap.set(data.id!, promise)
+            if (!notification) {
+                setTimeout(() => {
+                    reject("timeout")
+                }, this.readTimeout)
+                this.requestMap.set(data.id!, promise)
+            }
         })
-        try {
-            this.socket?.send(body)
-        } catch (e) {
-            this.socket?.send(body)
+        this.socket?.send(body)
+        if (notification) {
+            return
         }
-
+        data = await promise
         if (from) {
             return from(data.data as Record<string, any>, tag)
         }
@@ -181,7 +183,7 @@ export class WebSocketClient {
             if (response.status == 200) {
                 this.requestMap.get(response.id!)?.resolve(response)
             } else {
-                this.requestMap.get(response.id!)?.reject(response)
+                this.requestMap.get(response.id!)?.reject(`Error: ${response.status}`)
             }
         } else if (response.type == RpcType.Ping) {
             const data = new WebSocketData(RpcType.Pong)

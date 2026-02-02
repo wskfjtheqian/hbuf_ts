@@ -61,7 +61,7 @@ var Client = class {
     name = name.replace(/^\/+|\/+$/g, "") + "/";
     return this.middleware(async (req, opt) => {
       const result = new Result(0, "ok", void 0, from);
-      const resp = await this.request(name + method, true, req, tag, from && result.fromMap.bind(result), opt);
+      const resp = await this.request(name + method, from == null, req, tag, from && result.fromMap.bind(result), opt);
       if (from) {
         if (resp.code !== 0) {
           throw resp;
@@ -232,15 +232,16 @@ var WebSocketData = class _WebSocketData {
     return {
       type: this.type,
       header: this.header,
-      id: this.id,
+      id: this.id?.toString(),
       path: this.path,
-      status: this.status
+      status: this.status,
+      data: this.data
     };
   }
   static fromMap(map, tag) {
     const ret = new _WebSocketData(
       map.type,
-      map.id,
+      map.id === void 0 ? void 0 : BigInt(map.id),
       map.path
     );
     ret.header = map.header;
@@ -257,7 +258,7 @@ var FetchPromise = class {
 };
 var WebSocketClient = class {
   constructor(baseUrl, server, option) {
-    this.requestId = 0;
+    this.requestId = 0n;
     this.requestMap = /* @__PURE__ */ new Map();
     this.readTimeout = 3e4;
     this.heartbeat = 3e4;
@@ -288,8 +289,8 @@ var WebSocketClient = class {
     }
     data.data = req;
     const body = this.encode(data, (tag?.length ?? 0) > 0 ? "I" + tag : "");
-    data = await new Promise((resolve, reject) => {
-      let promise = new FetchPromise((value) => {
+    const promise = new Promise((resolve, reject) => {
+      let promise2 = new FetchPromise((value) => {
         if (this.requestMap.delete(data.id)) {
           resolve(value);
         }
@@ -298,16 +299,18 @@ var WebSocketClient = class {
           reject(e);
         }
       });
-      setTimeout(() => {
-        reject("timeout");
-      }, this.readTimeout);
-      this.requestMap.set(data.id, promise);
+      if (!notification) {
+        setTimeout(() => {
+          reject("timeout");
+        }, this.readTimeout);
+        this.requestMap.set(data.id, promise2);
+      }
     });
-    try {
-      this.socket?.send(body);
-    } catch (e) {
-      this.socket?.send(body);
+    this.socket?.send(body);
+    if (notification) {
+      return;
     }
+    data = await promise;
     if (from) {
       return from(data.data, tag);
     }
@@ -357,7 +360,7 @@ var WebSocketClient = class {
       if (response.status == 200) {
         this.requestMap.get(response.id)?.resolve(response);
       } else {
-        this.requestMap.get(response.id)?.reject(response);
+        this.requestMap.get(response.id)?.reject(`Error: ${response.status}`);
       }
     } else if (response.type == 3 /* Ping */) {
       const data = new WebSocketData(4 /* Pong */);

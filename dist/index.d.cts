@@ -89,10 +89,10 @@ declare class WebSocketData {
     type: RpcType;
     header?: Record<string, string[]>;
     data?: ArrayBuffer | Data | void;
-    id?: number;
+    id?: bigint;
     path?: string;
     status?: number;
-    constructor(type: RpcType, id?: number, path?: string, data?: ArrayBuffer | Data);
+    constructor(type: RpcType, id?: bigint, path?: string, data?: ArrayBuffer | Data);
     toMap(tag: string): Record<string, any>;
     static fromMap(map: Record<string, any>, tag: string): WebSocketData;
 }
@@ -110,8 +110,8 @@ interface WebSocketClientOption {
 declare class WebSocketClient {
     protected baseUrl: string;
     protected socket?: WebSocket;
-    protected requestId: number;
-    protected requestMap: Map<number, FetchPromise>;
+    protected requestId: bigint;
+    protected requestMap: Map<bigint, FetchPromise>;
     protected server?: Server;
     protected readTimeout: number;
     protected heartbeat: number;

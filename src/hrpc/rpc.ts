@@ -108,7 +108,7 @@ export class Client {
         name = name.replace(/^\/+|\/+$/g, "") + "/"
         return this.middleware(async (req: RequestType, opt?: Option): Promise<ResponseType> => {
             const result = new Result(0, "ok", undefined, from)
-            const resp = await this.request(name + method, true, req, tag, from && result.fromMap.bind(result), opt)
+            const resp = await this.request(name + method, from == null, req, tag, from && result.fromMap.bind(result), opt)
             if (from) {
                 if ((resp as Result).code !== 0) {
                     throw resp
