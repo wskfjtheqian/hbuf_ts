@@ -13,7 +13,7 @@
     import {Client} from "/src/hrpc/rpc.js"
     import {HttpClient} from "/src/hrpc/http.js"
 
-    const http = new HttpClient("http://localhost:8080")
+    const http = new HttpClient("http://localhost:8180")
     const client = new Client(http.request.bind(http))
 
     client.invoke(1, "service", "method", "tag", new Data({}), "data").then(res => {

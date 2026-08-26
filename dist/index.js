@@ -486,6 +486,7 @@ export {
   Client,
   Data,
   Error2 as Error,
+  FetchClient,
   HttpClient,
   NewJsonDecoder,
   NewJsonEncode,

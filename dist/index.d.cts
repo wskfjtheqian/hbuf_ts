@@ -175,4 +175,4 @@ declare const _default: {
     isData: typeof isData;
 };
 
-export { type BufferType, Client, type ClientOption, Data, type Decoder, type Descriptor, type Encoder, Error, type FromMap, type Handler, type HandlerMiddleware, HttpClient, type Method, NewJsonDecoder, NewJsonEncode, type Option, RecordEntry, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, WebSocketClient, type WebSocketClientOption, WebSocketData, convertArray, convertRecord, _default as default, formatDate, isArray, isData, isRecord, waiting };
+export { type BufferType, Client, type ClientOption, Data, type Decoder, type Descriptor, type Encoder, Error, FetchClient, type FromMap, type Handler, type HandlerMiddleware, HttpClient, type Method, NewJsonDecoder, NewJsonEncode, type Option, RecordEntry, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, WebSocketClient, type WebSocketClientOption, WebSocketData, convertArray, convertRecord, _default as default, formatDate, isArray, isData, isRecord, waiting };

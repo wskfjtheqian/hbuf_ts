@@ -1,4 +1,4 @@
-import {HttpClient,FetchClient} from "./hrpc/http";
+import {FetchClient, HttpClient} from "./hrpc/http";
 import {WebSocketClient, WebSocketData} from "./hrpc/websocket";
 import {Client, Error, NewJsonDecoder, NewJsonEncode, Result, Server} from "./hrpc/rpc";
 import {Data} from "./hbuf/data";
@@ -9,6 +9,7 @@ export {
     Data,
     Client,
     HttpClient,
+    FetchClient,
     WebSocketClient,
     Server,
     Result,

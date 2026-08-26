@@ -24,6 +24,7 @@ var hbuf = (() => {
     Client: () => Client,
     Data: () => Data,
     Error: () => Error2,
+    FetchClient: () => FetchClient,
     HttpClient: () => HttpClient,
     NewJsonDecoder: () => NewJsonDecoder,
     NewJsonEncode: () => NewJsonEncode,
