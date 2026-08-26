@@ -11,6 +11,7 @@ type ResponseType = BufferType | Data | undefined | void;
 interface Option {
     headers: Headers;
     method: string;
+    traceId?: string;
 }
 type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>;
 type HandlerMiddleware = (next: Handler) => Handler;

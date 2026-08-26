@@ -189,6 +189,23 @@ function formatDate(date, format) {
 function isData(obj) {
   return obj && typeof obj.toMap === "function";
 }
+var BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+function traceId() {
+  const milli = BigInt(Date.now());
+  const randomBuffer = new Uint8Array(8);
+  crypto.getRandomValues(randomBuffer);
+  const view = new DataView(randomBuffer.buffer);
+  const random64 = view.getBigUint64(0, false);
+  let num = milli << 64n | random64;
+  const result = new Array(22);
+  const target = 62n;
+  for (let i = 21; i >= 0; i--) {
+    const rem = num % target;
+    num = num / target;
+    result[i] = BASE62_CHARS[Number(rem)];
+  }
+  return result.join("");
+}
 
 // src/hrpc/http.ts
 var HttpClient = class {
@@ -207,19 +224,25 @@ var HttpClient = class {
     }
   }
   async fetch(path, body, opt) {
-    const res = await fetch(this.base + path, {
-      method: "POST",
-      body,
-      headers: opt?.headers
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", this.base + path);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.send(body);
+    xhr.setRequestHeader("trace-id", opt?.traceId ?? traceId());
+    return new Promise((resolve, reject) => {
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          resolve(xhr.response);
+        } else {
+          reject(new Error(`HTTP Error: ${xhr.status} ${xhr.statusText}`));
+        }
+      };
+      xhr.onerror = () => {
+        reject(new Error("Network Error"));
+      };
     });
-    if (res.ok) {
-      return res.arrayBuffer();
-    } else {
-      throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
-    }
   }
 };
-var http_default = HttpClient;
 
 // src/hrpc/websocket.ts
 var WebSocketData = class _WebSocketData {
@@ -336,7 +359,9 @@ var WebSocketClient = class {
             let data = event.data instanceof Blob ? await event.data.arrayBuffer() : event.data;
             await this.onMessage(data);
           } catch (e) {
-            console.log(e);
+            if (e != "Method not found") {
+              console.log(e);
+            }
           }
         };
         this.socket.onopen = (event) => {
@@ -409,7 +434,7 @@ var WebSocketClient = class {
 var index_default = {
   Data,
   Client,
-  HttpClient: http_default,
+  HttpClient,
   WebSocketClient,
   Server,
   Result,
@@ -430,7 +455,7 @@ export {
   Client,
   Data,
   Error2 as Error,
-  http_default as HttpClient,
+  HttpClient,
   NewJsonDecoder,
   NewJsonEncode,
   RecordEntry,

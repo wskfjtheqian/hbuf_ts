@@ -1,4 +1,4 @@
-import HttpClient from "./hrpc/http";
+import {HttpClient} from "./hrpc/http";
 import {WebSocketClient, WebSocketData} from "./hrpc/websocket";
 import {Client, Error, NewJsonDecoder, NewJsonEncode, Result, Server} from "./hrpc/rpc";
 import {Data} from "./hbuf/data";
