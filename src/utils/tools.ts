@@ -92,3 +92,30 @@ export function isData(obj: any): boolean {
     return obj && typeof obj.toMap === 'function';
 }
 
+const BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+export function traceId(): string {
+    // 1. 获取当前毫秒时间戳
+    const milli = BigInt(Date.now());
+
+    // 2. 浏览器环境生成 8 字节安全随机数 (使用 DataView 读取大端序)
+    const randomBuffer = new Uint8Array(8);
+    crypto.getRandomValues(randomBuffer);
+    const view = new DataView(randomBuffer.buffer);
+    const random64 = view.getBigUint64(0, false); // false 代表大端序 BigEndian
+
+    // 3. 拼接成 128 位大数
+    let num = (milli << 64n) | random64;
+
+    // 4. 执行 Base62 编码
+    const result = new Array<string>(22);
+    const target = 62n;
+
+    for (let i = 21; i >= 0; i--) {
+        const rem = num % target;
+        num = num / target;
+        result[i] = BASE62_CHARS[Number(rem)];
+    }
+
+    return result.join('');
+}

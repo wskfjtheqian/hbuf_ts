@@ -7,6 +7,7 @@ export type ResponseType = BufferType | Data | undefined | void
 export interface Option {
     headers: Headers
     method: string
+    traceId?: string
 }
 
 export type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>

@@ -156,7 +156,9 @@ export class WebSocketClient {
                         let data: ArrayBuffer = event.data instanceof Blob ? await (event.data as Blob).arrayBuffer() : event.data
                         await this.onMessage(data)
                     } catch (e) {
-                        console.log(e)
+                        if (e != "Method not found"){
+                            console.log(e)
+                        }
                     }
                 }
                 this.socket.onopen = (event) => {
