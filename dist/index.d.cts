@@ -78,6 +78,14 @@ declare class HttpClient {
     request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType>;
     protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
 }
+declare class FetchClient {
+    protected base: string;
+    protected decode: Decoder;
+    protected encode: Encoder;
+    constructor(base: string, option?: HttpClientOption);
+    request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType>;
+    protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
+}
 
 declare enum RpcType {
     Request = 0,
@@ -149,6 +157,7 @@ declare const _default: {
     Data: typeof Data;
     Client: typeof Client;
     HttpClient: typeof HttpClient;
+    FetchClient: typeof FetchClient;
     WebSocketClient: typeof WebSocketClient;
     Server: typeof Server;
     Result: typeof Result;

@@ -35,8 +35,8 @@ export class HttpClient {
         const xhr = new XMLHttpRequest()
         xhr.open("POST", this.base + path)
         xhr.setRequestHeader("Content-Type", "application/octet-stream")
-        xhr.send(body)
         xhr.setRequestHeader("trace-id", opt?.traceId ?? traceId())
+        xhr.send(body)
         return new Promise<BufferType>((resolve, reject) => {
             xhr.onload = () => {
                 if (xhr.status === 200) {
