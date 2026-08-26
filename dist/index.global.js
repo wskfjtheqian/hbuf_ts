@@ -236,12 +236,17 @@ var hbuf = (() => {
   }
   var BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   function traceId() {
+    const buf = new Uint8Array(16);
+    const view = new DataView(buf.buffer);
     const milli = BigInt(Date.now());
-    const randomBuffer = new Uint8Array(8);
-    crypto.getRandomValues(randomBuffer);
-    const view = new DataView(randomBuffer.buffer);
-    const random64 = view.getBigUint64(0, false);
-    let num = milli << 64n | random64;
+    view.setBigUint64(0, milli, false);
+    const randBuf = new Uint8Array(8);
+    window.crypto.getRandomValues(randBuf);
+    buf.set(randBuf, 8);
+    let num = 0n;
+    for (let i = 0; i < 16; i++) {
+      num = num << 8n | BigInt(buf[i]);
+    }
     const result = new Array(22);
     const target = 62n;
     for (let i = 21; i >= 0; i--) {

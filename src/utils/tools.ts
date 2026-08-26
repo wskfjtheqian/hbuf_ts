@@ -95,22 +95,28 @@ export function isData(obj: any): boolean {
 const BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 export function traceId(): string {
-    // 1. 获取当前毫秒时间戳
+    const buf = new Uint8Array(16);
+    const view = new DataView(buf.buffer);
+
+    // 1. 前 8 字节：写入毫秒时间戳
     const milli = BigInt(Date.now());
+    view.setBigUint64(0, milli, false);
 
-    // 2. 浏览器环境生成 8 字节安全随机数 (使用 DataView 读取大端序)
-    const randomBuffer = new Uint8Array(8);
-    crypto.getRandomValues(randomBuffer);
-    const view = new DataView(randomBuffer.buffer);
-    const random64 = view.getBigUint64(0, false); // false 代表大端序 BigEndian
+    // 2. 后 8 字节：使用完美兼容浏览器的全局 Web Crypto API
+    const randBuf = new Uint8Array(8);
+    // 浏览器和前端框架（如 Vite）原生支持全局的 crypto 对象
+    window.crypto.getRandomValues(randBuf);
+    buf.set(randBuf, 8);
 
-    // 3. 拼接成 128 位大数
-    let num = (milli << 64n) | random64;
+    // 3. 将 16 字节整体转为 128 位 BigInt
+    let num = 0n;
+    for (let i = 0; i < 16; i++) {
+        num = (num << 8n) | BigInt(buf[i]);
+    }
 
-    // 4. 执行 Base62 编码
+    // 4. Base62 编码
     const result = new Array<string>(22);
     const target = 62n;
-
     for (let i = 21; i >= 0; i--) {
         const rem = num % target;
         num = num / target;
