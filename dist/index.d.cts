@@ -152,6 +152,7 @@ declare function isRecord(o: any): boolean;
 declare function isArray(o: any): boolean;
 declare function formatDate(date: Date | string | number, format?: string): string;
 declare function isData(obj: any): boolean;
+declare function traceId(): string;
 
 declare const _default: {
     Data: typeof Data;
@@ -173,6 +174,7 @@ declare const _default: {
     isArray: typeof isArray;
     formatDate: typeof formatDate;
     isData: typeof isData;
+    traceId: typeof traceId;
 };
 
-export { type BufferType, Client, type ClientOption, Data, type Decoder, type Descriptor, type Encoder, Error, FetchClient, type FromMap, type Handler, type HandlerMiddleware, HttpClient, type Method, NewJsonDecoder, NewJsonEncode, type Option, RecordEntry, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, WebSocketClient, type WebSocketClientOption, WebSocketData, convertArray, convertRecord, _default as default, formatDate, isArray, isData, isRecord, waiting };
+export { type BufferType, Client, type ClientOption, Data, type Decoder, type Descriptor, type Encoder, Error, FetchClient, type FromMap, type Handler, type HandlerMiddleware, HttpClient, type Method, NewJsonDecoder, NewJsonEncode, type Option, RecordEntry, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, WebSocketClient, type WebSocketClientOption, WebSocketData, convertArray, convertRecord, _default as default, formatDate, isArray, isData, isRecord, traceId, waiting };

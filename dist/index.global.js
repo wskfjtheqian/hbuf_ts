@@ -40,6 +40,7 @@ var hbuf = (() => {
     isArray: () => isArray,
     isData: () => isData,
     isRecord: () => isRecord,
+    traceId: () => traceId,
     waiting: () => waiting
   });
 
@@ -528,7 +529,8 @@ var hbuf = (() => {
     isRecord,
     isArray,
     formatDate,
-    isData
+    isData,
+    traceId
   };
   return __toCommonJS(index_exports);
 })();

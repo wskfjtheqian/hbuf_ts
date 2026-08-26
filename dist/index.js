@@ -483,7 +483,8 @@ var index_default = {
   isRecord,
   isArray,
   formatDate,
-  isData
+  isData,
+  traceId
 };
 export {
   Client,
@@ -505,6 +506,7 @@ export {
   isArray,
   isData,
   isRecord,
+  traceId,
   waiting
 };
 //# sourceMappingURL=index.js.map

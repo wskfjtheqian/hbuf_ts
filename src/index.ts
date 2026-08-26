@@ -2,7 +2,7 @@ import {FetchClient, HttpClient} from "./hrpc/http";
 import {WebSocketClient, WebSocketData} from "./hrpc/websocket";
 import {Client, Error, NewJsonDecoder, NewJsonEncode, Result, Server} from "./hrpc/rpc";
 import {Data} from "./hbuf/data";
-import {convertArray, convertRecord, formatDate, isArray, isData, isRecord, RecordEntry, waiting} from "./utils/tools";
+import {convertArray, convertRecord, formatDate, isArray, isData, isRecord, RecordEntry, waiting, traceId} from "./utils/tools";
 
 
 export {
@@ -25,6 +25,7 @@ export {
     isArray,
     formatDate,
     isData,
+    traceId,
 };
 
 export default {
@@ -47,6 +48,7 @@ export default {
     isArray,
     formatDate,
     isData,
+    traceId,
 }
 
 

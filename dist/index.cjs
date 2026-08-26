@@ -39,6 +39,7 @@ __export(index_exports, {
   isArray: () => isArray,
   isData: () => isData,
   isRecord: () => isRecord,
+  traceId: () => traceId,
   waiting: () => waiting
 });
 module.exports = __toCommonJS(index_exports);
@@ -528,7 +529,8 @@ var index_default = {
   isRecord,
   isArray,
   formatDate,
-  isData
+  isData,
+  traceId
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
@@ -550,6 +552,7 @@ var index_default = {
   isArray,
   isData,
   isRecord,
+  traceId,
   waiting
 });
 //# sourceMappingURL=index.cjs.map
