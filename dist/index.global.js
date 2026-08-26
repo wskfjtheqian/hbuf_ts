@@ -236,20 +236,18 @@ var hbuf = (() => {
   }
   var BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   function traceId() {
-    const buf = new Uint8Array(16);
-    const view = new DataView(buf.buffer);
     const milli = BigInt(Date.now());
-    view.setBigUint64(0, milli, false);
-    const randBuf = new Uint8Array(8);
+    const randBuf = new Uint8Array(9);
     window.crypto.getRandomValues(randBuf);
-    buf.set(randBuf, 8);
-    let num = 0n;
-    for (let i = 0; i < 16; i++) {
-      num = num << 8n | BigInt(buf[i]);
+    let random65 = 0n;
+    for (let i = 0; i < 9; i++) {
+      random65 = random65 << 8n | BigInt(randBuf[i]);
     }
-    const result = new Array(22);
+    random65 = random65 & (1n << 65n) - 1n;
+    let num = milli << 65n | random65;
+    const result = new Array(18);
     const target = 62n;
-    for (let i = 21; i >= 0; i--) {
+    for (let i = 17; i >= 0; i--) {
       const rem = num % target;
       num = num / target;
       result[i] = BASE62_CHARS[Number(rem)];
@@ -277,7 +275,7 @@ var hbuf = (() => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", this.base + path);
       xhr.setRequestHeader("Content-Type", "application/octet-stream");
-      xhr.setRequestHeader("trace-id", opt?.traceId ?? traceId());
+      xhr.setRequestHeader("X-Trace-Id", opt?.traceId ?? traceId());
       xhr.send(body);
       return new Promise((resolve, reject) => {
         xhr.onload = () => {
@@ -310,7 +308,7 @@ var hbuf = (() => {
     }
     async fetch(path, body, opt) {
       const headers = opt?.headers ?? new Headers();
-      headers.append("trace-id", opt?.traceId ?? traceId());
+      headers.append("X-Trace-Id", opt?.traceId ?? traceId());
       const res = await fetch(this.base + path, {
         method: "POST",
         body,

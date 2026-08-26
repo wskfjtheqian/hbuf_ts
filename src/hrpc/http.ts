@@ -35,7 +35,7 @@ export class HttpClient {
         const xhr = new XMLHttpRequest()
         xhr.open("POST", this.base + path)
         xhr.setRequestHeader("Content-Type", "application/octet-stream")
-        xhr.setRequestHeader("trace-id", opt?.traceId ?? traceId())
+        xhr.setRequestHeader("X-Trace-Id", opt?.traceId ?? traceId())
         xhr.send(body)
         return new Promise<BufferType>((resolve, reject) => {
             xhr.onload = () => {
@@ -77,7 +77,7 @@ export class FetchClient {
 
     protected async fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType> {
         const headers = opt?.headers ?? new Headers()
-        headers.append("trace-id", opt?.traceId ?? traceId())
+        headers.append("X-Trace-Id", opt?.traceId ?? traceId())
         const res = await fetch(this.base + path, {
             method: "POST",
             body: body,
