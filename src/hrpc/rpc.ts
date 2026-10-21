@@ -15,11 +15,11 @@ export type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>
 // HandlerMiddleware 用于对 Handler 进行中间件处理。
 export type HandlerMiddleware = (next: Handler) => Handler
 
-export type Encoder = (v: Data, tag: string) => ArrayBuffer
+export type Encoder = (v: Data) => ArrayBuffer
 
-export type Decoder = (reader: ArrayBuffer, from: FromMap, tag: string) => Data
+export type Decoder = (reader: ArrayBuffer, from: FromMap) => Data
 
-export type Request = (path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option) => Promise<ResponseType>
+export type Request = (path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option) => Promise<ResponseType>
 
 
 export class Error extends Data {
@@ -32,7 +32,7 @@ export class Error extends Data {
     code: number
     msg: string
 
-    public toMap(tag: string): Record<string, any> {
+    public toMap(): Record<string, any> {
         return this;
     }
 }
@@ -47,18 +47,18 @@ export class Result extends Error {
         this.from = from;
     }
 
-    public toMap(tag: string): Record<string, any> {
+    public toMap(): Record<string, any> {
         return {
-            ...super.toMap(tag),
-            data: this.data?.toMap(tag)
+            ...super.toMap(),
+            data: this.data?.toMap()
         };
     }
 
-    fromMap(map: Record<string, any>, tag: string): Result {
+    fromMap(map: Record<string, any>): Result {
         return new Result(
             map.code,
             map.msg,
-            map.data && this.from?.call(this, map.data as Record<string, any>, tag),
+            map.data && this.from?.call(this, map.data as Record<string, any>),
         );
     }
 }
@@ -68,16 +68,16 @@ export class Result extends Error {
 
 export function NewJsonDecoder(): Decoder {
     const decoder = new TextDecoder('utf-8');
-    return (buffer: ArrayBuffer, from: FromMap, tag: string): Data => {
+    return (buffer: ArrayBuffer, from: FromMap): Data => {
         const str = decoder.decode(buffer);
-        return from(JSON.parse(str) as Data, tag)
+        return from(JSON.parse(str) as Data)
     }
 }
 
 export function NewJsonEncode(): Encoder {
     const encoder = new TextEncoder();
-    return (v: Data, tag: string): ArrayBuffer => {
-        const str = JSON.stringify(v.toMap(tag))
+    return (v: Data): ArrayBuffer => {
+        const str = JSON.stringify(v.toMap())
         return encoder.encode(str).buffer
     }
 }
@@ -89,8 +89,8 @@ export function NewHBufEncode(): Encoder {
 }
 
 export function NewHBufDecoder(): Decoder {
-    return (buffer: ArrayBuffer, from: FromMap, tag: string): Data => {
-        const data = from({} as Record<string, any>, tag) as unknown as HData
+    return (buffer: ArrayBuffer, from: FromMap): Data => {
+        const data = from({} as Record<string, any>) as unknown as HData
         Unmarshal(new Uint8Array(buffer), data)
         return data as unknown as Data
     }
@@ -119,11 +119,11 @@ export class Client {
         }
     }
 
-    public invoke<T extends ResponseType>(id: number, name: string, method: string, tag: string, request: RequestType, from?: FromMap): Promise<T> {
+    public invoke<T extends ResponseType>(id: number, name: string, method: string, request: RequestType, from?: FromMap): Promise<T> {
         name = name.replace(/^\/+|\/+$/g, "") + "/"
         return this.middleware(async (req: RequestType, opt?: Option): Promise<ResponseType> => {
             const result = new Result(0, "ok", undefined, from)
-            const resp = await this.request(name + method, from == null, req, tag, from && result.fromMap.bind(result), opt)
+            const resp = await this.request(name + method, from == null, req, from && result.fromMap.bind(result), opt)
             if (from) {
                 if ((resp as Result).code !== 0) {
                     throw resp
@@ -144,7 +144,6 @@ export interface Method {
     handler: Handler
     withContext: (opt?: Option) => Option | undefined
     from?: FromMap;
-    tag: string
 }
 
 export interface ServerOption {
@@ -195,7 +194,7 @@ export class Server {
             throw new Error(-1, "Method not found")
         }
 
-        const val = !method.from ? req : method.from(req, method.tag?.length > 0 ? "I" + method.tag : "")
+        const val = !method.from ? req : method.from(req)
         return await this.middleware(method.handler)(val as ArrayBuffer | Data)
     }
 }

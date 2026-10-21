@@ -315,7 +315,7 @@ var hbuf = (() => {
       this.code = code;
       this.msg = msg;
     }
-    toMap(tag) {
+    toMap() {
       return this;
     }
   };
@@ -325,31 +325,31 @@ var hbuf = (() => {
       this.data = data;
       this.from = from;
     }
-    toMap(tag) {
+    toMap() {
       return {
-        ...super.toMap(tag),
-        data: this.data?.toMap(tag)
+        ...super.toMap(),
+        data: this.data?.toMap()
       };
     }
-    fromMap(map, tag) {
+    fromMap(map) {
       return new _Result(
         map.code,
         map.msg,
-        map.data && this.from?.call(this, map.data, tag)
+        map.data && this.from?.call(this, map.data)
       );
     }
   };
   function NewJsonDecoder() {
     const decoder = new TextDecoder("utf-8");
-    return (buffer, from, tag) => {
+    return (buffer, from) => {
       const str = decoder.decode(buffer);
-      return from(JSON.parse(str), tag);
+      return from(JSON.parse(str));
     };
   }
   function NewJsonEncode() {
     const encoder = new TextEncoder();
-    return (v, tag) => {
-      const str = JSON.stringify(v.toMap(tag));
+    return (v) => {
+      const str = JSON.stringify(v.toMap());
       return encoder.encode(str).buffer;
     };
   }
@@ -359,8 +359,8 @@ var hbuf = (() => {
     };
   }
   function NewHBufDecoder() {
-    return (buffer, from, tag) => {
-      const data = from({}, tag);
+    return (buffer, from) => {
+      const data = from({});
       Unmarshal(new Uint8Array(buffer), data);
       return data;
     };
@@ -375,11 +375,11 @@ var hbuf = (() => {
         return next;
       };
     }
-    invoke(id, name, method, tag, request, from) {
+    invoke(id, name, method, request, from) {
       name = name.replace(/^\/+|\/+$/g, "") + "/";
       return this.middleware(async (req, opt) => {
         const result = new Result(0, "ok", void 0, from);
-        const resp = await this.request(name + method, from == null, req, tag, from && result.fromMap.bind(result), opt);
+        const resp = await this.request(name + method, from == null, req, from && result.fromMap.bind(result), opt);
         if (from) {
           if (resp.code !== 0) {
             throw resp;
@@ -422,7 +422,7 @@ var hbuf = (() => {
       if (!method) {
         throw new Error2(-1, "Method not found");
       }
-      const val = !method.from ? req : method.from(req, method.tag?.length > 0 ? "I" + method.tag : "");
+      const val = !method.from ? req : method.from(req);
       return await this.middleware(method.handler)(val);
     }
   };
@@ -535,11 +535,11 @@ var hbuf = (() => {
       this.decode = option?.decode ?? NewJsonDecoder();
       this.encode = option?.encode ?? NewJsonEncode();
     }
-    async request(path, notification, req, tag, from, opt) {
-      const body = isData(req) ? this.encode(req, (tag?.length ?? 0) > 0 ? "I" + tag : "") : req;
+    async request(path, notification, req, from, opt) {
+      const body = isData(req) ? this.encode(req) : req;
       const resp = await this.fetch(path, body, opt);
       if (from) {
-        return this.decode(resp instanceof Blob ? await resp.arrayBuffer() : resp, from, tag);
+        return this.decode(resp instanceof Blob ? await resp.arrayBuffer() : resp, from);
       } else {
         return resp;
       }
@@ -570,11 +570,11 @@ var hbuf = (() => {
       this.decode = option?.decode ?? NewJsonDecoder();
       this.encode = option?.encode ?? NewJsonEncode();
     }
-    async request(path, notification, req, tag, from, opt) {
-      const body = isData(req) ? this.encode(req, (tag?.length ?? 0) > 0 ? "I" + tag : "") : req;
+    async request(path, notification, req, from, opt) {
+      const body = isData(req) ? this.encode(req) : req;
       const resp = await this.fetch(path, body, opt);
       if (from) {
-        return this.decode(resp instanceof Blob ? await resp.arrayBuffer() : resp, from, tag);
+        return this.decode(resp instanceof Blob ? await resp.arrayBuffer() : resp, from);
       } else {
         return resp;
       }
@@ -602,7 +602,7 @@ var hbuf = (() => {
       this.id = id;
       this.path = path;
     }
-    toMap(tag) {
+    toMap() {
       return {
         type: this.type,
         header: this.header,
@@ -612,7 +612,7 @@ var hbuf = (() => {
         data: this.data
       };
     }
-    static fromMap(map, tag) {
+    static fromMap(map) {
       const ret = new _WebSocketData(
         map.type,
         map.id === void 0 ? void 0 : BigInt(map.id),
@@ -645,7 +645,7 @@ var hbuf = (() => {
       this.decode = option?.decode ?? NewJsonDecoder();
       this.encode = option?.encode ?? NewJsonEncode();
     }
-    async request(path, notification, req, tag, from, opt) {
+    async request(path, notification, req, from, opt) {
       this.requestId++;
       let data = new WebSocketData(
         notification ? 2 /* Notification */ : 0 /* Request */,
@@ -662,7 +662,7 @@ var hbuf = (() => {
         req = await req.arrayBuffer();
       }
       data.data = req;
-      const body = this.encode(data, (tag?.length ?? 0) > 0 ? "I" + tag : "");
+      const body = this.encode(data);
       const promise = new Promise((resolve, reject) => {
         let promise2 = new FetchPromise((value) => {
           if (this.requestMap.delete(data.id)) {
@@ -686,7 +686,7 @@ var hbuf = (() => {
       }
       data = await promise;
       if (from) {
-        return from(data.data, tag);
+        return from(data.data);
       }
       return data.data;
     }
@@ -731,7 +731,7 @@ var hbuf = (() => {
     }
     async onMessage(buffer) {
       this.headTimeout = false;
-      const response = this.decode(buffer, WebSocketData.fromMap, "");
+      const response = this.decode(buffer, WebSocketData.fromMap);
       if (response.type == 1 /* Response */) {
         if (response.status == 200) {
           this.requestMap.get(response.id)?.resolve(response);
@@ -740,7 +740,7 @@ var hbuf = (() => {
         }
       } else if (response.type == 3 /* Ping */) {
         const data = new WebSocketData(4 /* Pong */);
-        this.socket?.send(this.encode(data, ""));
+        this.socket?.send(this.encode(data));
       } else if (response.type == 0 /* Request */ || response.type == 2 /* Notification */) {
         await this.onRequest(response, response.type == 2 /* Notification */);
       }
@@ -764,7 +764,7 @@ var hbuf = (() => {
       } else {
         data.status = 404;
       }
-      this.socket?.send(this.encode(data, (request.path?.length ?? 0) > 0 ? "I" + request.path : ""));
+      this.socket?.send(this.encode(data));
     }
     onHeartbeat() {
       if (this.socket?.OPEN) {
@@ -775,7 +775,7 @@ var hbuf = (() => {
           return;
         }
         const data = new WebSocketData(3 /* Ping */);
-        this.socket.send(this.encode(data, ""));
+        this.socket.send(this.encode(data));
         this.headTimeout = true;
       }
     }

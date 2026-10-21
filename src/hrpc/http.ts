@@ -21,11 +21,11 @@ export class HttpClient {
 
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType> {
-        const body = isData(req) ? this.encode(req as Data, (tag?.length ?? 0) > 0 ? "I" + tag : "") : req as BufferType
+    public async request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType> {
+        const body = isData(req) ? this.encode(req as Data) : req as BufferType
         const resp = await this.fetch(path, body, opt)
         if (from) {
-            return this.decode(((resp instanceof Blob) ? await resp.arrayBuffer() : resp), from, tag)
+            return this.decode(((resp instanceof Blob) ? await resp.arrayBuffer() : resp), from)
         } else {
             return resp
         }
@@ -65,11 +65,11 @@ export class FetchClient {
 
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType> {
-        const body = isData(req) ? this.encode(req as Data, (tag?.length ?? 0) > 0 ? "I" + tag : "") : req as BufferType
+    public async request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType> {
+        const body = isData(req) ? this.encode(req as Data) : req as BufferType
         const resp = await this.fetch(path, body, opt)
         if (from) {
-            return this.decode(((resp instanceof Blob) ? await resp.arrayBuffer() : resp), from, tag)
+            return this.decode(((resp instanceof Blob) ? await resp.arrayBuffer() : resp), from)
         } else {
             return resp
         }

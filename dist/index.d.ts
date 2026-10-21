@@ -326,10 +326,10 @@ declare function Marshal(data: HData): Uint8Array;
  */
 declare function Unmarshal(buf: Uint8Array, data: HData): void;
 /** 兼容旧导出：FromMap（hrpc 层使用）。 */
-type FromMap = (map: Record<string, any>, tag: string) => any;
+type FromMap = (map: Record<string, any>) => any;
 /** Data 抽象类（兼容原有 JSON codec 用法）。 */
 declare abstract class Data {
-    abstract toMap(tag: string): Record<string, any>;
+    abstract toMap(): Record<string, any>;
 }
 declare function isHData(obj: any): obj is HData;
 
@@ -343,21 +343,21 @@ interface Option {
 }
 type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>;
 type HandlerMiddleware = (next: Handler) => Handler;
-type Encoder = (v: Data, tag: string) => ArrayBuffer;
-type Decoder = (reader: ArrayBuffer, from: FromMap, tag: string) => Data;
-type Request = (path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option) => Promise<ResponseType>;
+type Encoder = (v: Data) => ArrayBuffer;
+type Decoder = (reader: ArrayBuffer, from: FromMap) => Data;
+type Request = (path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option) => Promise<ResponseType>;
 declare class Error$1 extends Data {
     constructor(code: number, msg: string);
     code: number;
     msg: string;
-    toMap(tag: string): Record<string, any>;
+    toMap(): Record<string, any>;
 }
 declare class Result extends Error$1 {
     data?: Data;
     from?: FromMap;
     constructor(code: number, msg: string, data?: Data, from?: FromMap);
-    toMap(tag: string): Record<string, any>;
-    fromMap(map: Record<string, any>, tag: string): Result;
+    toMap(): Record<string, any>;
+    fromMap(map: Record<string, any>): Result;
 }
 declare function NewJsonDecoder(): Decoder;
 declare function NewJsonEncode(): Encoder;
@@ -370,7 +370,7 @@ declare class Client {
     request: Request;
     middleware: HandlerMiddleware;
     constructor(request: Request, option?: ClientOption);
-    invoke<T extends ResponseType>(id: number, name: string, method: string, tag: string, request: RequestType, from?: FromMap): Promise<T>;
+    invoke<T extends ResponseType>(id: number, name: string, method: string, request: RequestType, from?: FromMap): Promise<T>;
 }
 interface Method {
     id: number;
@@ -378,7 +378,6 @@ interface Method {
     handler: Handler;
     withContext: (opt?: Option) => Option | undefined;
     from?: FromMap;
-    tag: string;
 }
 interface ServerOption {
     decode?: Decoder;
@@ -405,7 +404,7 @@ declare class HttpClient {
     protected decode: Decoder;
     protected encode: Encoder;
     constructor(base: string, option?: HttpClientOption);
-    request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType>;
+    request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType>;
     protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
 }
 declare class FetchClient {
@@ -413,7 +412,7 @@ declare class FetchClient {
     protected decode: Decoder;
     protected encode: Encoder;
     constructor(base: string, option?: HttpClientOption);
-    request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType>;
+    request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType>;
     protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
 }
 
@@ -432,8 +431,8 @@ declare class WebSocketData {
     path?: string;
     status?: number;
     constructor(type: RpcType, id?: bigint, path?: string, data?: ArrayBuffer | Data);
-    toMap(tag: string): Record<string, any>;
-    static fromMap(map: Record<string, any>, tag: string): WebSocketData;
+    toMap(): Record<string, any>;
+    static fromMap(map: Record<string, any>): WebSocketData;
 }
 declare class FetchPromise {
     resolve: (value: WebSocketData | PromiseLike<WebSocketData>) => void;
@@ -460,7 +459,7 @@ declare class WebSocketClient {
     protected encode: Encoder;
     onclose?: ((code: string) => any) | null;
     constructor(baseUrl: string, server?: Server, option?: WebSocketClientOption);
-    request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType>;
+    request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType>;
     connect(protocols?: string | string[]): Promise<void>;
     close(): void;
     private onMessage;

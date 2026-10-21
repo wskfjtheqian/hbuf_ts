@@ -24,7 +24,7 @@ export class WebSocketData {
         this.path = path;
     }
 
-    public toMap(tag: string): Record<string, any> {
+    public toMap(): Record<string, any> {
         return {
             type: this.type,
             header: this.header,
@@ -35,7 +35,7 @@ export class WebSocketData {
         }
     }
 
-    public static fromMap(map: Record<string, any>, tag: string): WebSocketData {
+    public static fromMap(map: Record<string, any>): WebSocketData {
         const ret = new WebSocketData(
             map.type,
             map.id === undefined ? undefined : BigInt(map.id),
@@ -88,7 +88,7 @@ export class WebSocketClient {
         this.encode = option?.encode ?? NewJsonEncode()
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType> {
+    public async request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType> {
         this.requestId++
         let data = new WebSocketData(
             notification ? RpcType.Notification : RpcType.Request,
@@ -105,7 +105,7 @@ export class WebSocketClient {
             req = await req.arrayBuffer()
         }
         data.data = req
-        const body = this.encode(data, (tag?.length ?? 0) > 0 ? "I" + tag : "")
+        const body = this.encode(data)
 
         const promise = new Promise<WebSocketData>((resolve, reject) => {
             let promise = new FetchPromise((value) => {
@@ -130,7 +130,7 @@ export class WebSocketClient {
         }
         data = await promise
         if (from) {
-            return from(data.data as Record<string, any>, tag)
+            return from(data.data as Record<string, any>)
         }
         return data.data
     }
@@ -179,7 +179,7 @@ export class WebSocketClient {
 
     private async onMessage(buffer: ArrayBuffer) {
         this.headTimeout = false
-        const response = this.decode(buffer, WebSocketData.fromMap, "") as WebSocketData
+        const response = this.decode(buffer, WebSocketData.fromMap) as WebSocketData
 
         if (response.type == RpcType.Response) {
             if (response.status == 200) {
@@ -189,7 +189,7 @@ export class WebSocketClient {
             }
         } else if (response.type == RpcType.Ping) {
             const data = new WebSocketData(RpcType.Pong)
-            this.socket?.send(this.encode(data, ""))
+            this.socket?.send(this.encode(data))
         } else if (response.type == RpcType.Request || response.type == RpcType.Notification) {
             await this.onRequest(response, response.type == RpcType.Notification)
         }
@@ -214,7 +214,7 @@ export class WebSocketClient {
         } else {
             data.status = 404
         }
-        this.socket?.send(this.encode(data, (request.path?.length ?? 0) > 0 ? "I" + request.path : ""))
+        this.socket?.send(this.encode(data))
     }
 
     private onHeartbeat() {
@@ -226,7 +226,7 @@ export class WebSocketClient {
                 return
             }
             const data = new WebSocketData(RpcType.Ping)
-            this.socket.send(this.encode(data, ""))
+            this.socket.send(this.encode(data))
             this.headTimeout = true
         }
     }

@@ -145,11 +145,11 @@ export function Unmarshal(buf: Uint8Array, data: HData): void {
 }
 
 /** 兼容旧导出：FromMap（hrpc 层使用）。 */
-export type FromMap = (map: Record<string, any>, tag: string) => any
+export type FromMap = (map: Record<string, any>) => any
 
 /** Data 抽象类（兼容原有 JSON codec 用法）。 */
 export abstract class Data {
-    public abstract toMap(tag: string): Record<string, any>;
+    public abstract toMap(): Record<string, any>;
 }
 
 export function isHData(obj: any): obj is HData {
