@@ -336,3 +336,7 @@ export function NewHBufDecoder(): Decoder {
 7. **`Uint8Array` 是引用类型**：字段默认值必须用 `= new Uint8Array(0)` 而非类属性声明共享。
 8. **不要给生成代码添加任何序列化无关逻辑**（如 toJSON、构造函数参数），保持与 Go 生成代码结构对称。
 9. **Map 键序**：JS `Map` 按插入序编码（Go map 随机序），字节级对比只能用单元素 map；解码端不受序影响。
+10. **空标记容器元素解码为 null**：`[][]byte` / `[]T[]` / `[]Map` 等嵌套容器中的空标记元素与 Go 零值一致返回 null（不是 `[]`/`new Map()`）；生成类型须用 `(Uint8Array | null)[]` 等可空声明。
+11. **count==0 的容器解码不触碰字段**：list/map 的 count==0 与 Go 一致保持字段原值（运行时返回 undefined 跳过 set）；非指针 data 同理；指针 data（isPtr）每次解码都**分配新实例**覆盖旧引用（Go 行为）。
+12. **可空容器字段（`*[]T`/`*Map<K,V>`）**：解码 count>0 时分配新实例；count==0 保持 nil（Go 端 List/MapDescriptor 已修复同样行为，两端一致）。
+13. **值 data 元素（非指针列表元素）零值编码为 3 字节空结构**（`TAG(TData,1,1) | 00 | EXTENDS`），与 Go `p != nil` 值元素一致；不要误写成空标记。

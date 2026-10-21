@@ -1359,7 +1359,7 @@ var BytesDescriptor = class {
     this.isPtr = isPtr;
   }
   zero() {
-    return this.isPtr ? null : new Uint8Array(0);
+    return null;
   }
   isEmpty(v) {
     if (v == null) {
@@ -1552,7 +1552,7 @@ var ListDescriptor = class {
     this.isPtr = isPtr;
   }
   zero() {
-    return this.isPtr ? null : [];
+    return null;
   }
   isEmpty(v) {
     if (v == null) {
@@ -1589,14 +1589,17 @@ var ListDescriptor = class {
       throw new HBufError("invalid list type");
     }
     if (!valRead) {
-      return [];
+      return void 0;
     }
     const count = DecodeUint64(r, valueLen);
+    if (count === 0n) {
+      return void 0;
+    }
     const list = [];
     for (let i = 0n; i < count; i++) {
       const { typ: t, idLen, valueLen: vLen } = DecodeType(r);
       if (idLen > 0) {
-        list.push(this.desc.decode(r, t, idLen === 1, vLen));
+        list.push(this.desc.decode(r, t, idLen === 1, vLen) ?? null);
       } else {
         list.push(this.desc.zero());
       }
@@ -1611,7 +1614,7 @@ var MapDescriptor = class {
     this.isPtr = isPtr;
   }
   zero() {
-    return this.isPtr ? null : /* @__PURE__ */ new Map();
+    return null;
   }
   isEmpty(v) {
     if (v == null) {
@@ -1649,15 +1652,18 @@ var MapDescriptor = class {
       throw new HBufError("invalid map type");
     }
     if (!valRead) {
-      return /* @__PURE__ */ new Map();
+      return void 0;
     }
     const count = DecodeUint64(r, valueLen);
+    if (count === 0n) {
+      return void 0;
+    }
     const m = /* @__PURE__ */ new Map();
     for (let i = 0n; i < count; i++) {
       let { typ: t, idLen, valueLen: vLen } = DecodeType(r);
-      const k = idLen > 0 ? this.keyDesc.decode(r, t, idLen === 1, vLen) : this.keyDesc.zero();
+      const k = idLen > 0 ? this.keyDesc.decode(r, t, idLen === 1, vLen) ?? null : this.keyDesc.zero();
       ({ typ: t, idLen, valueLen: vLen } = DecodeType(r));
-      const val = idLen > 0 ? this.valueDesc.decode(r, t, idLen === 1, vLen) : this.valueDesc.zero();
+      const val = idLen > 0 ? this.valueDesc.decode(r, t, idLen === 1, vLen) ?? null : this.valueDesc.zero();
       m.set(k, val);
     }
     return m;
@@ -1696,6 +1702,10 @@ var DataDescriptor = class {
       if (v == null) {
         if (this.isPtr) {
           WriterType(buf, 7 /* TData */, 0, 1);
+        } else {
+          WriterType(buf, 7 /* TData */, 1, 1);
+          EncodeUint64(buf, 0n);
+          WriterType(buf, 0 /* TInt */, 0, 1);
         }
         return;
       }
@@ -1731,17 +1741,18 @@ var DataDescriptor = class {
     if (typ !== 7 /* TData */) {
       throw new HBufError("invalid data type");
     }
-    const v = target ?? this.factory();
-    if (!valRead) {
-      return v;
-    }
-    const count = DecodeUint64(r, valueLen);
+    const v = this.isPtr ? this.factory() : target ?? this.factory();
+    const count = valRead ? DecodeUint64(r, valueLen) : 0n;
     for (let i = 0n; i < count; i++) {
       const { typ: t, idLen: idLen2, valueLen: vLen } = DecodeType(r);
       const id = DecodeId(r, idLen2);
       const field = this.fieldMap.get(id);
       if (field) {
-        field.set(v, field.desc.decode(r, t, true, vLen));
+        const cur = field.get(v);
+        const dv = field.desc.decode(r, t, true, vLen, cur);
+        if (dv !== void 0) {
+          field.set(v, dv);
+        }
       } else {
         SkipValue(r, t, vLen);
       }
@@ -1754,11 +1765,18 @@ var DataDescriptor = class {
         const id = DecodeId(r, eIdLen);
         const field = this.extendMap.get(id);
         if (field) {
-          field.set(v, field.desc.decode(r, t, true, eVLen));
+          const cur = field.get(v);
+          const dv = field.desc.decode(r, t, true, eVLen, cur);
+          if (dv !== void 0) {
+            field.set(v, dv);
+          }
         } else {
           SkipValue(r, t, eVLen);
         }
       }
+    }
+    if (count === 0n && !this.isPtr && target !== void 0) {
+      return void 0;
     }
     return v;
   }
@@ -1784,6 +1802,8 @@ var RefDescriptor = class {
       if (v == null) {
         if (this.isPtr) {
           WriterType(buf, 7 /* TData */, 0, 1);
+        } else {
+          this.desc.encode(buf, null, void 0);
         }
         return;
       }
@@ -1791,7 +1811,7 @@ var RefDescriptor = class {
     }
   }
   decode(r, typ, valRead, valueLen, target) {
-    return this.desc.decode(r, typ, valRead, valueLen, target);
+    return this.desc.decode(r, typ, valRead, valueLen, this.isPtr ? void 0 : target);
   }
 };
 var SyncDescriptor = class {
@@ -1814,7 +1834,7 @@ var SyncDescriptor = class {
     this.Desc().encode(buf, v, id);
   }
   decode(r, typ, valRead, valueLen, target) {
-    return this.Desc().decode(r, typ, valRead, valueLen);
+    return this.Desc().decode(r, typ, valRead, valueLen, target);
   }
 };
 function NewDataDescriptor(factory, fields, extends_, isPtr) {

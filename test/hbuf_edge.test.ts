@@ -117,7 +117,7 @@ class MapSingleTestTs implements HData {
     v9: Map<bigint, number> = new Map()
     v10: Map<string, Date | null> = new Map()
     v11: Map<bigint, string> = new Map()
-    v12: Map<string, Uint8Array> = new Map()
+    v12: Map<string, Uint8Array | null> = new Map()
     v13: Map<string, Date | null> = new Map()
     descriptors(): Descriptor {
         return mapSingleDesc
@@ -156,7 +156,7 @@ function buildMapSingle(): MapSingleTestTs {
     v.v9 = new Map([[1n, Math.fround(-0)]])
     v.v10 = new Map([["t", null]]) // 零值时间
     v.v11 = new Map([[1n, "0"]]) // decimal 零值
-    v.v12 = new Map([["b", new Uint8Array(0)]]) // 空 bytes
+    v.v12 = new Map([["b", null]]) // nil bytes 值元素（与 Go 一致：空标记 -> 解码回 null）
     v.v13 = new Map([["t", new Date(1234567890987)]]) // 整毫秒时间
     return v
 }

@@ -72,8 +72,8 @@ class HBufTestTs implements HData {
     v18: boolean | null = null
     v19: string = ""
     v20: string | null = null
-    v21: Uint8Array[] = []
-    v22: Uint8Array[] = null
+    v21: Uint8Array = new Uint8Array(0)
+    v22: Uint8Array | null = null
     v23: number = 0
     v24: number | null = null
     v25: number = 0
@@ -105,7 +105,7 @@ class HBufTestTs implements HData {
     v51: string[] = []
     v52: (string | null)[] = []
     v53: Uint8Array[][] = []
-    v54: Uint8Array[][] = []
+    v54: (Uint8Array[] | null) = null
     v55: number[] = []
     v56: (number | null)[] = []
     v57: number[] = []

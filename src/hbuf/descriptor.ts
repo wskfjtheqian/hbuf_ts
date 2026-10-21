@@ -623,7 +623,7 @@ export class BytesDescriptor implements Descriptor {
     }
 
     public zero(): any {
-        return this.isPtr ? null : new Uint8Array(0)
+        return null
     }
 
     public isEmpty(v: any): boolean {
@@ -834,7 +834,7 @@ export class ListDescriptor implements Descriptor {
     }
 
     public zero(): any {
-        return this.isPtr ? null : []
+        return null
     }
 
     public isEmpty(v: any): boolean {
@@ -873,15 +873,20 @@ export class ListDescriptor implements Descriptor {
         if (typ !== Type.TList) {
             throw new HBufError("invalid list type")
         }
+        // 与 Go 一致：count==0 / 空标记（valRead=false）不触碰字段（返回 undefined 表示保持原值）
         if (!valRead) {
-            return []
+            return undefined
         }
         const count = DecodeUint64(r, valueLen)
+        if (count === 0n) {
+            return undefined
+        }
         const list: any[] = []
         for (let i = 0n; i < count; i++) {
             const {typ: t, idLen, valueLen: vLen} = DecodeType(r)
             if (idLen > 0) {
-                list.push(this.desc.decode(r, t, idLen === 1, vLen))
+                // 嵌套容器 count==0 返回 undefined -> 零值 null（与 Go 元素零值 nil 一致）
+                list.push(this.desc.decode(r, t, idLen === 1, vLen) ?? null)
             } else {
                 list.push(this.desc.zero())
             }
@@ -896,7 +901,7 @@ export class MapDescriptor implements Descriptor {
     }
 
     public zero(): any {
-        return this.isPtr ? null : new Map()
+        return null
     }
 
     public isEmpty(v: any): boolean {
@@ -936,16 +941,20 @@ export class MapDescriptor implements Descriptor {
         if (typ !== Type.TMap) {
             throw new HBufError("invalid map type")
         }
+        // 与 Go 一致：count==0 / 空标记（valRead=false）不触碰字段（返回 undefined 表示保持原值）
         if (!valRead) {
-            return new Map()
+            return undefined
         }
         const count = DecodeUint64(r, valueLen)
+        if (count === 0n) {
+            return undefined
+        }
         const m = new Map()
         for (let i = 0n; i < count; i++) {
             let {typ: t, idLen, valueLen: vLen} = DecodeType(r)
-            const k = idLen > 0 ? this.keyDesc.decode(r, t, idLen === 1, vLen) : this.keyDesc.zero()
+            const k = idLen > 0 ? this.keyDesc.decode(r, t, idLen === 1, vLen) ?? null : this.keyDesc.zero()
             ;({typ: t, idLen, valueLen: vLen} = DecodeType(r))
-            const val = idLen > 0 ? this.valueDesc.decode(r, t, idLen === 1, vLen) : this.valueDesc.zero()
+            const val = idLen > 0 ? this.valueDesc.decode(r, t, idLen === 1, vLen) ?? null : this.valueDesc.zero()
             m.set(k, val)
         }
         return m
@@ -1007,6 +1016,11 @@ export class DataDescriptor implements Descriptor {
             if (v == null) {
                 if (this.isPtr) {
                     WriterType(buf, Type.TData, 0, 1)
+                } else {
+                    // 与 Go 一致：值元素（非指针）零值写 3 字节空结构（TAG | count=0 | EXTENDS）
+                    WriterType(buf, Type.TData, 1, 1)
+                    EncodeUint64(buf, 0n)
+                    WriterType(buf, Type.TInt, 0, 1)
                 }
                 return
             }
@@ -1044,17 +1058,20 @@ export class DataDescriptor implements Descriptor {
         if (typ !== Type.TData) {
             throw new HBufError("invalid data type")
         }
-        const v = target ?? this.factory()
-        if (!valRead) {
-            return v
-        }
-        const count = DecodeUint64(r, valueLen)
+        // 与 Go 一致：isPtr 每次解码都分配新实例（覆盖旧指针）；非 isPtr 复用 target
+        const v = this.isPtr ? this.factory() : (target ?? this.factory())
+        const count = valRead ? DecodeUint64(r, valueLen) : 0n
         for (let i = 0n; i < count; i++) {
             const {typ: t, idLen, valueLen: vLen} = DecodeType(r)
             const id = DecodeId(r, idLen)
             const field = this.fieldMap.get(id)
             if (field) {
-                field.set(v, field.desc.decode(r, t, true, vLen))
+                // 传当前字段值作 target：嵌套 data 就地填充；count==0 容器返回 undefined 时跳过（Go 不触碰）
+                const cur = field.get(v)
+                const dv = field.desc.decode(r, t, true, vLen, cur)
+                if (dv !== undefined) {
+                    field.set(v, dv)
+                }
             } else {
                 SkipValue(r, t, vLen)
             }
@@ -1068,11 +1085,20 @@ export class DataDescriptor implements Descriptor {
                 const id = DecodeId(r, eIdLen)
                 const field = this.extendMap.get(id)
                 if (field) {
-                    field.set(v, field.desc.decode(r, t, true, eVLen))
+                    const cur = field.get(v)
+                    const dv = field.desc.decode(r, t, true, eVLen, cur)
+                    if (dv !== undefined) {
+                        field.set(v, dv)
+                    }
                 } else {
                     SkipValue(r, t, eVLen)
                 }
             }
+        }
+        // 与 Go 一致：非 isPtr 且 count==0 的字段级解码不触碰原值；
+        // 元素级（无 target）返回新实例（Go 值元素保持零值结构）
+        if (count === 0n && !this.isPtr && target !== undefined) {
+            return undefined
         }
         return v
     }
@@ -1104,6 +1130,9 @@ export class RefDescriptor implements Descriptor {
             if (v == null) {
                 if (this.isPtr) {
                     WriterType(buf, Type.TData, 0, 1)
+                } else {
+                    // 与 Go 一致：值元素（非指针）零值写 3 字节空结构
+                    this.desc.encode(buf, null, undefined)
                 }
                 return
             }
@@ -1112,7 +1141,8 @@ export class RefDescriptor implements Descriptor {
     }
 
     public decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any {
-        return this.desc.decode(r, typ, valRead, valueLen, target)
+        // isPtr 时不复用 target：与 Go 一致每次解码分配新实例
+        return this.desc.decode(r, typ, valRead, valueLen, this.isPtr ? undefined : target)
     }
 }
 
@@ -1145,7 +1175,7 @@ export class SyncDescriptor implements Descriptor {
     }
 
     public decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any {
-        return this.Desc().decode(r, typ, valRead, valueLen)
+        return this.Desc().decode(r, typ, valRead, valueLen, target)
     }
 }
 
