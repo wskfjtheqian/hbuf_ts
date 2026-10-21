@@ -29,9 +29,10 @@ var hbuf = (() => {
     DecimalDescriptor: () => DecimalDescriptor,
     DoubleDescriptor: () => DoubleDescriptor,
     Error: () => Error2,
+    FetchClient: () => FetchClient,
     FloatDescriptor: () => FloatDescriptor,
     HBufError: () => HBufError,
-    HttpClient: () => http_default,
+    HttpClient: () => HttpClient,
     Int16Descriptor: () => Int16Descriptor,
     Int32Descriptor: () => Int32Descriptor,
     Int64Descriptor: () => Int64Descriptor,
@@ -89,6 +90,7 @@ var hbuf = (() => {
     isData: () => isData,
     isHData: () => isHData,
     isRecord: () => isRecord,
+    traceId: () => traceId,
     waiting: () => waiting
   });
 
@@ -505,6 +507,26 @@ var hbuf = (() => {
   function isData(obj) {
     return obj && typeof obj.toMap === "function";
   }
+  var BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  function traceId() {
+    const milli = BigInt(Date.now());
+    const randBuf = new Uint8Array(9);
+    window.crypto.getRandomValues(randBuf);
+    let random65 = 0n;
+    for (let i = 0; i < 9; i++) {
+      random65 = random65 << 8n | BigInt(randBuf[i]);
+    }
+    random65 = random65 & (1n << 65n) - 1n;
+    let num = milli << 65n | random65;
+    const result = new Array(18);
+    const target = 62n;
+    for (let i = 17; i >= 0; i--) {
+      const rem = num % target;
+      num = num / target;
+      result[i] = BASE62_CHARS[Number(rem)];
+    }
+    return result.join("");
+  }
 
   // src/hrpc/http.ts
   var HttpClient = class {
@@ -523,10 +545,47 @@ var hbuf = (() => {
       }
     }
     async fetch(path, body, opt) {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", this.base + path);
+      xhr.setRequestHeader("Content-Type", "application/octet-stream");
+      xhr.setRequestHeader("X-Trace-Id", opt?.traceId ?? traceId());
+      xhr.send(body);
+      return new Promise((resolve, reject) => {
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            resolve(xhr.response);
+          } else {
+            reject(new Error(`HTTP Error: ${xhr.status} ${xhr.statusText}`));
+          }
+        };
+        xhr.onerror = () => {
+          reject(new Error("Network Error"));
+        };
+      });
+    }
+  };
+  var FetchClient = class {
+    constructor(base, option) {
+      this.base = base.replace(/^\/+|\/+$/g, "") + "/";
+      this.decode = option?.decode ?? NewJsonDecoder();
+      this.encode = option?.encode ?? NewJsonEncode();
+    }
+    async request(path, notification, req, tag, from, opt) {
+      const body = isData(req) ? this.encode(req, (tag?.length ?? 0) > 0 ? "I" + tag : "") : req;
+      const resp = await this.fetch(path, body, opt);
+      if (from) {
+        return this.decode(resp instanceof Blob ? await resp.arrayBuffer() : resp, from, tag);
+      } else {
+        return resp;
+      }
+    }
+    async fetch(path, body, opt) {
+      const headers = opt?.headers ?? new Headers();
+      headers.append("X-Trace-Id", opt?.traceId ?? traceId());
       const res = await fetch(this.base + path, {
         method: "POST",
         body,
-        headers: opt?.headers
+        headers
       });
       if (res.ok) {
         return res.arrayBuffer();
@@ -535,7 +594,6 @@ var hbuf = (() => {
       }
     }
   };
-  var http_default = HttpClient;
 
   // src/hrpc/websocket.ts
   var WebSocketData = class _WebSocketData {
@@ -652,7 +710,9 @@ var hbuf = (() => {
               let data = event.data instanceof Blob ? await event.data.arrayBuffer() : event.data;
               await this.onMessage(data);
             } catch (e) {
-              console.log(e);
+              if (e != "Method not found") {
+                console.log(e);
+              }
             }
           };
           this.socket.onopen = (event) => {
@@ -1822,7 +1882,8 @@ var hbuf = (() => {
   var index_default = {
     Data,
     Client,
-    HttpClient: http_default,
+    HttpClient,
+    FetchClient,
     WebSocketClient,
     Server,
     Result,
@@ -1879,7 +1940,8 @@ var hbuf = (() => {
     NewMapDescriptor,
     NewDataDescriptor,
     NewRefDescriptor,
-    NewSyncDescriptor
+    NewSyncDescriptor,
+    traceId
   };
   return __toCommonJS(index_exports);
 })();

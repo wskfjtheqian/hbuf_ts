@@ -53,7 +53,17 @@ import {
     Uint32Descriptor,
     Uint64Descriptor,
 } from "./hbuf/descriptor";
-import {convertArray, convertRecord, formatDate, isArray, isData, isRecord, RecordEntry, waiting} from "./utils/tools";
+import {
+    convertArray,
+    convertRecord,
+    formatDate,
+    isArray,
+    isData,
+    isRecord,
+    RecordEntry,
+    waiting,
+    traceId
+} from "./utils/tools";
 
 export {
     Data,

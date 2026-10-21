@@ -339,6 +339,7 @@ type ResponseType = BufferType | Data | undefined | void;
 interface Option {
     headers: Headers;
     method: string;
+    traceId?: string;
 }
 type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>;
 type HandlerMiddleware = (next: Handler) => Handler;
@@ -400,6 +401,14 @@ interface HttpClientOption {
     encode?: Encoder;
 }
 declare class HttpClient {
+    protected base: string;
+    protected decode: Decoder;
+    protected encode: Encoder;
+    constructor(base: string, option?: HttpClientOption);
+    request(path: string, notification: boolean, req: RequestType, tag: string, from?: FromMap, opt?: Option): Promise<ResponseType>;
+    protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
+}
+declare class FetchClient {
     protected base: string;
     protected decode: Decoder;
     protected encode: Encoder;
@@ -473,11 +482,13 @@ declare function isRecord(o: any): boolean;
 declare function isArray(o: any): boolean;
 declare function formatDate(date: Date | string | number, format?: string): string;
 declare function isData(obj: any): boolean;
+declare function traceId(): string;
 
 declare const _default: {
     Data: typeof Data;
     Client: typeof Client;
     HttpClient: typeof HttpClient;
+    FetchClient: typeof FetchClient;
     WebSocketClient: typeof WebSocketClient;
     Server: typeof Server;
     Result: typeof Result;
@@ -535,6 +546,7 @@ declare const _default: {
     NewDataDescriptor: typeof NewDataDescriptor;
     NewRefDescriptor: typeof NewRefDescriptor;
     NewSyncDescriptor: typeof NewSyncDescriptor;
+    traceId: typeof traceId;
 };
 
-export { BoolDescriptor, type BufferType, BytesDescriptor, Client, type ClientOption, Data, DataDescriptor, DecimalDescriptor, type Decoder, DoubleDescriptor, type Encoder, Error$1 as Error, type FieldDesc, FloatDescriptor, type FromMap, type Descriptor as HBufDescriptor, HBufError, type HData, type Handler, type HandlerMiddleware, HttpClient, Int16Descriptor, Int32Descriptor, Int64Descriptor, Int8Descriptor, ListDescriptor, MapDescriptor, Marshal, type Method, NewBoolDescriptor, NewBytesDescriptor, NewDataDescriptor, NewDecimalDescriptor, NewDoubleDescriptor, NewFloatDescriptor, NewHBufDecoder, NewHBufEncode, NewInt16Descriptor, NewInt32Descriptor, NewInt64Descriptor, NewInt8Descriptor, NewJsonDecoder, NewJsonEncode, NewListDescriptor, NewMapDescriptor, NewRefDescriptor, NewStringDescriptor, NewSyncDescriptor, NewTimeDescriptor, NewUint16Descriptor, NewUint32Descriptor, NewUint64Descriptor, NewUint8Descriptor, type Option, Reader, RecordEntry, RefDescriptor, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, ShortBufferError, StringDescriptor, SyncDescriptor, TimeDescriptor, Type, Uint16Descriptor, Uint32Descriptor, Uint64Descriptor, Uint8Descriptor, Unmarshal, WebSocketClient, type WebSocketClientOption, WebSocketData, Writer, convertArray, convertRecord, _default as default, formatDate, isArray, isData, isHData, isRecord, waiting };
+export { BoolDescriptor, type BufferType, BytesDescriptor, Client, type ClientOption, Data, DataDescriptor, DecimalDescriptor, type Decoder, DoubleDescriptor, type Encoder, Error$1 as Error, FetchClient, type FieldDesc, FloatDescriptor, type FromMap, type Descriptor as HBufDescriptor, HBufError, type HData, type Handler, type HandlerMiddleware, HttpClient, Int16Descriptor, Int32Descriptor, Int64Descriptor, Int8Descriptor, ListDescriptor, MapDescriptor, Marshal, type Method, NewBoolDescriptor, NewBytesDescriptor, NewDataDescriptor, NewDecimalDescriptor, NewDoubleDescriptor, NewFloatDescriptor, NewHBufDecoder, NewHBufEncode, NewInt16Descriptor, NewInt32Descriptor, NewInt64Descriptor, NewInt8Descriptor, NewJsonDecoder, NewJsonEncode, NewListDescriptor, NewMapDescriptor, NewRefDescriptor, NewStringDescriptor, NewSyncDescriptor, NewTimeDescriptor, NewUint16Descriptor, NewUint32Descriptor, NewUint64Descriptor, NewUint8Descriptor, type Option, Reader, RecordEntry, RefDescriptor, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, ShortBufferError, StringDescriptor, SyncDescriptor, TimeDescriptor, Type, Uint16Descriptor, Uint32Descriptor, Uint64Descriptor, Uint8Descriptor, Unmarshal, WebSocketClient, type WebSocketClientOption, WebSocketData, Writer, convertArray, convertRecord, _default as default, formatDate, isArray, isData, isHData, isRecord, traceId, waiting };
