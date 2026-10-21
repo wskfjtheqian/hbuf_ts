@@ -92,3 +92,39 @@ export function isData(obj: any): boolean {
     return obj && typeof obj.toMap === 'function';
 }
 
+// 预定义 Base62 的字符集（共 62 个字符，与 Go 完全一致）
+const BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+export function traceId(): string {
+    // 1. 获取当前毫秒时间戳（约占 41~42 位）
+    const milli = BigInt(Date.now());
+
+    // 2. ⚡ 完美适配浏览器：使用 Web Crypto API 生成 9 字节安全随机数
+    const randBuf = new Uint8Array(9);
+    // window.crypto 在现代浏览器、Edge 边缘计算及 Web Workers 中原生支持
+    window.crypto.getRandomValues(randBuf);
+
+    // 3. 将 9 字节随机数通过位移切出 65 位
+    let random65 = 0n;
+    for (let i = 0; i < 9; i++) {
+        random65 = (random65 << 8n) | BigInt(randBuf[i]);
+    }
+    // 约束最高位在 65 位以内（严格对齐 Go 端的最高位边界）
+    random65 = random65 & ((1n << 65n) - 1n);
+
+    // 4. 严格对齐 Go 端的紧凑大数拼装逻辑：将时间戳左移 65 位，然后或上随机数
+    // 高位被完全填满，彻底消灭开头的 0
+    let num = (milli << 65n) | random65;
+
+    // 5. 执行 Base62 编码，目标空间固定为 18 位
+    const result = new Array<string>(18);
+    const target = 62n;
+
+    for (let i = 17; i >= 0; i--) {
+        const rem = num % target;
+        num = num / target;
+        result[i] = BASE62_CHARS[Number(rem)];
+    }
+
+    return result.join('');
+}

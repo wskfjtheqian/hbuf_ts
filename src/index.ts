@@ -1,4 +1,4 @@
-import HttpClient from "./hrpc/http";
+import {FetchClient, HttpClient} from "./hrpc/http";
 import {WebSocketClient, WebSocketData} from "./hrpc/websocket";
 import {
     Client,
@@ -59,6 +59,7 @@ export {
     Data,
     Client,
     HttpClient,
+    FetchClient,
     WebSocketClient,
     Server,
     Result,
@@ -76,6 +77,7 @@ export {
     isArray,
     formatDate,
     isData,
+    traceId,
     Int8Descriptor,
     Int16Descriptor,
     Int32Descriptor,
@@ -122,6 +124,7 @@ export default {
     Data,
     Client,
     HttpClient,
+    FetchClient,
     WebSocketClient,
     Server,
     Result,
@@ -179,6 +182,7 @@ export default {
     NewDataDescriptor,
     NewRefDescriptor,
     NewSyncDescriptor,
+    traceId,
 }
 
 
