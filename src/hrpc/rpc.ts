@@ -1,4 +1,4 @@
-import {Data, FromMap} from "../hbuf/data";
+import {Data, FromMap, HData, Marshal, Unmarshal} from "../hbuf/data";
 
 export type BufferType = ArrayBuffer | Blob
 export type RequestType = BufferType | Data | undefined
@@ -78,6 +78,20 @@ export function NewJsonEncode(): Encoder {
     return (v: Data, tag: string): ArrayBuffer => {
         const str = JSON.stringify(v.toMap(tag))
         return encoder.encode(str).buffer
+    }
+}
+
+export function NewHBufEncode(): Encoder {
+    return (v: Data): ArrayBuffer => {
+        return Marshal(v as unknown as HData).slice().buffer
+    }
+}
+
+export function NewHBufDecoder(): Decoder {
+    return (buffer: ArrayBuffer, from: FromMap, tag: string): Data => {
+        const data = from({} as Record<string, any>, tag) as unknown as HData
+        Unmarshal(new Uint8Array(buffer), data)
+        return data as unknown as Data
     }
 }
 
