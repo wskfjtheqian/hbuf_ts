@@ -1,6 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert";
 import * as fs from "node:fs";
+import Decimal from "decimal.js";
 import {
     DataDescriptor,
     Descriptor,
@@ -38,6 +39,11 @@ function deepEq(a: any, b: any, path = "$"): void {
     if (typeof a === "number" && typeof b === "number" && Number.isNaN(a) && Number.isNaN(b)) return
     if (a == null || b == null) {
         assert.strictEqual(a, b, path)
+        return
+    }
+    if (a instanceof Decimal || b instanceof Decimal) {
+        // decimal 字段：源为字符串、decode 后为 Decimal 实例，按数值相等比较
+        assert.ok(new Decimal(a).eq(b), path)
         return
     }
     if (typeof a !== typeof b) {

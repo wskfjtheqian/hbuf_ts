@@ -1,5 +1,6 @@
-import {Data, FromMap} from "../hbuf/data";
-import {Decoder, Encoder, NewJsonDecoder, NewJsonEncode, Option, RequestType, ResponseType, Server} from "./rpc";
+import {HData, isHData} from "../hbuf/data";
+import {DataDescriptor, Descriptor, FieldDesc, Int32Descriptor, Int64Descriptor, ListDescriptor, MapDescriptor, RefDescriptor, StringDescriptor, Uint8Descriptor} from "../hbuf/descriptor";
+import {Decoder, Encoder, JsonDescriptor, NewJsonDecoder, NewJsonEncode, Option, RequestType, ResponseType, Server} from "./rpc";
 
 
 export enum RpcType {
@@ -10,42 +11,46 @@ export enum RpcType {
     Pong = 4,
 }
 
-export class WebSocketData {
+/**
+ * WebSocketData WebSocket 信封：type/header/id/path/status + 异构 data 负载。
+ * data 为 HData 时按其描述符编解码，否则走 JSON 透传（JsonDescriptor）。
+ */
+export class WebSocketData implements HData {
     type: RpcType
-    header?: Record<string, string[]>
-    data?: ArrayBuffer | Data | void
+    header?: Map<string, string[]>
+    data?: ArrayBuffer | HData | void
     id?: bigint
     path?: string
     status?: number
 
-    constructor(type: RpcType, id?: bigint, path?: string, data?: ArrayBuffer | Data) {
+    constructor(type: RpcType, id?: bigint, path?: string, data?: ArrayBuffer | HData) {
         this.type = type;
         this.id = id;
         this.path = path;
+        this.data = data;
     }
 
-    public toMap(): Record<string, any> {
-        return {
-            type: this.type,
-            header: this.header,
-            id: this.id?.toString(),
-            path: this.path,
-            status: this.status,
-            data: this.data,
-        }
+    descriptors(): Descriptor {
+        const dataDesc = isHData(this.data) ? this.data.descriptors() : jsonDesc
+        return webSocketDataDesc(dataDesc)
     }
+}
 
-    public static fromMap(map: Record<string, any>): WebSocketData {
-        const ret = new WebSocketData(
-            map.type,
-            map.id === undefined ? undefined : BigInt(map.id),
-            map.path,
-        )
-        ret.header = map.header
-        ret.status = map.status
-        ret.data = map.data
-        return ret
-    }
+// jsonDesc JSON 透传描述符（信封 data 的缺省编解码）。
+const jsonDesc: JsonDescriptor = new JsonDescriptor(true)
+
+function webSocketDataDesc(dataDesc: Descriptor): DataDescriptor {
+    return new DataDescriptor(
+        () => new WebSocketData(RpcType.Request),
+        new Map<number, FieldDesc>([
+            [1, {name: "type", desc: new Uint8Descriptor(), get: (o: WebSocketData) => o.type, set: (o: WebSocketData, v: number) => o.type = v}],
+            [2, {name: "header", desc: new MapDescriptor(new StringDescriptor(), new ListDescriptor(new StringDescriptor()), true), get: (o: WebSocketData) => o.header, set: (o: WebSocketData, v: any) => o.header = v}],
+            [3, {name: "id", desc: new Int64Descriptor(true), get: (o: WebSocketData) => o.id, set: (o: WebSocketData, v: any) => o.id = v}],
+            [4, {name: "path", desc: new StringDescriptor(true), get: (o: WebSocketData) => o.path, set: (o: WebSocketData, v: any) => o.path = v}],
+            [5, {name: "status", desc: new Int32Descriptor(true), get: (o: WebSocketData) => o.status, set: (o: WebSocketData, v: any) => o.status = v}],
+            [6, {name: "data", desc: new RefDescriptor(dataDesc, true), get: (o: WebSocketData) => o.data, set: (o: WebSocketData, v: any) => o.data = v}],
+        ]),
+    )
 }
 
 class FetchPromise {
@@ -88,7 +93,7 @@ export class WebSocketClient {
         this.encode = option?.encode ?? NewJsonEncode()
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType> {
+    public async request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType> {
         this.requestId++
         let data = new WebSocketData(
             notification ? RpcType.Notification : RpcType.Request,
@@ -96,10 +101,11 @@ export class WebSocketClient {
             path,
         )
         if (opt?.headers) {
-            data.header = {}
-            opt.headers.forEach((value: string, key: string, parent: Headers): void => {
-                data.header![key] = (data.header![key] || []).concat(value);
+            const header = new Map<string, string[]>()
+            opt.headers.forEach((value: string, key: string): void => {
+                header.set(key, (header.get(key) || []).concat(value));
             });
+            data.header = header
         }
         if (req instanceof Blob) {
             req = await req.arrayBuffer()
@@ -108,7 +114,7 @@ export class WebSocketClient {
         const body = this.encode(data)
 
         const promise = new Promise<WebSocketData>((resolve, reject) => {
-            let promise = new FetchPromise((value) => {
+            const p = new FetchPromise((value) => {
                 if (this.requestMap.delete(data.id!)) {
                     resolve(value)
                 }
@@ -121,7 +127,7 @@ export class WebSocketClient {
                 setTimeout(() => {
                     reject("timeout")
                 }, this.readTimeout)
-                this.requestMap.set(data.id!, promise)
+                this.requestMap.set(data.id!, p)
             }
         })
         this.socket?.send(body)
@@ -129,8 +135,9 @@ export class WebSocketClient {
             return
         }
         data = await promise
-        if (from) {
-            return from(data.data as Record<string, any>)
+        if (desc) {
+            // 信封 data 经 JSON 透传解码为普通对象，再按响应描述符还原
+            return desc.fromJson(data.data as Record<string, any>)
         }
         return data.data
     }
@@ -153,8 +160,8 @@ export class WebSocketClient {
                 }
                 this.socket.onmessage = async (event) => {
                     try {
-                        let data: ArrayBuffer = event.data instanceof Blob ? await (event.data as Blob).arrayBuffer() : event.data
-                        await this.onMessage(data)
+                        let buffer: ArrayBuffer = event.data instanceof Blob ? await (event.data as Blob).arrayBuffer() : event.data
+                        await this.onMessage(buffer)
                     } catch (e) {
                         if (e != "Method not found"){
                             console.log(e)
@@ -179,7 +186,7 @@ export class WebSocketClient {
 
     private async onMessage(buffer: ArrayBuffer) {
         this.headTimeout = false
-        const response = this.decode(buffer, WebSocketData.fromMap) as WebSocketData
+        const response = this.decode(buffer, webSocketDataDesc(jsonDesc)) as WebSocketData
 
         if (response.type == RpcType.Response) {
             if (response.status == 200) {

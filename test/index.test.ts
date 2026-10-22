@@ -4,8 +4,11 @@ import {createServer} from "node:http";
 import {AddressInfo} from "node:net";
 import {
     Client,
-    Data,
+    DataDescriptor,
+    Descriptor,
     FetchClient,
+    FieldDesc,
+    HData,
     Handler,
     Method,
     Option,
@@ -13,37 +16,46 @@ import {
     ResponseType,
     Result,
     Server,
+    StringDescriptor,
 } from "../src";
 
-class TextRequest extends Data {
+class TextRequest implements HData {
     hello: string = ""
 
-    toMap(): Record<string, any> {
-        return this;
+    descriptors(): Descriptor {
+        return textRequestDesc
     }
 }
 
-class TextResponse extends Data {
+const textRequestDesc: DataDescriptor = new DataDescriptor(
+    () => new TextRequest(),
+    new Map<number, FieldDesc>([
+        [1, {name: "hello", desc: new StringDescriptor(), get: (o: TextRequest) => o.hello, set: (o: TextRequest, v: string) => o.hello = v}],
+    ]),
+)
+
+class TextResponse implements HData {
     hello: string = ""
 
-    toMap(): Record<string, any> {
-        return this;
-    }
-
-    static fromMap(map: Record<string, any>): TextResponse {
-        const ret = new TextResponse();
-        ret.hello = map.hello;
-        return ret;
+    descriptors(): Descriptor {
+        return textResponseDesc
     }
 }
+
+const textResponseDesc: DataDescriptor = new DataDescriptor(
+    () => new TextResponse(),
+    new Map<number, FieldDesc>([
+        [1, {name: "hello", desc: new StringDescriptor(), get: (o: TextResponse) => o.hello, set: (o: TextResponse, v: string) => o.hello = v}],
+    ]),
+)
 
 test("http client", async () => {
-    // 服务端：注册 handler，返回 Result 包装的响应（与客户端 invoke 的 Result 约定一致）
+    // 服务端：注册 handler（请求按 desc 解码），响应由胶水层包装为 Result 编码
     const server = new Server()
     const method: Method = {
         id: 1,
         name: "method",
-        from: (map: Record<string, any>) => Object.assign(new TextRequest(), map),
+        desc: textRequestDesc,
         handler: async (req: RequestType): Promise<ResponseType> => {
             const ret = new TextResponse()
             ret.hello = "hello " + (req as TextRequest).hello
@@ -58,10 +70,12 @@ test("http client", async () => {
         for await (const chunk of req) {
             chunks.push(chunk)
         }
-        const body = JSON.parse(Buffer.concat(chunks).toString("utf-8"))
-        const resp = await server.response(req.url ?? "", body)
+        const body = Buffer.concat(chunks)
+        // 原始字节直接交给 Server 按描述符解码，响应包装为 Result 编码
+        const resp = await server.response(req.url ?? "", new Uint8Array(body))
+        const buf = server.encode(new Result(0, "ok", resp as HData))
         res.setHeader("Content-Type", "application/octet-stream")
-        res.end(JSON.stringify(new Result(0, "ok", resp as Data).toMap()))
+        res.end(new Uint8Array(buf))
     })
     await new Promise<void>((resolve) => httpServer.listen(0, "127.0.0.1", resolve))
     const port = (httpServer.address() as AddressInfo).port
@@ -80,7 +94,7 @@ test("http client", async () => {
     const req = new TextRequest();
     req.hello = "world"
 
-    const res = await client.invoke<TextResponse>(1, "service", "method", req, TextResponse.fromMap)
+    const res = await client.invoke<TextResponse>(1, "service", "method", req, textResponseDesc)
     assert.strictEqual(res.hello, "hello world")
 
     await new Promise<void>((resolve) => {

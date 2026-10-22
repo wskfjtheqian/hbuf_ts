@@ -136,22 +136,16 @@ export function Marshal(data: HData): Uint8Array {
 
 /**
  * Unmarshal 将 HBuf 二进制解码到数据对象中。
+ * desc 可选：动态描述符对象（如 RPC Result）的工厂实例自身描述符可能不完整，需显式传入。
  */
-export function Unmarshal(buf: Uint8Array, data: HData): void {
+export function Unmarshal(buf: Uint8Array, data: HData, desc?: Descriptor): void {
     if (buf.length === 0) {
         return
     }
     const reader = new Reader(buf)
     const {typ, valueLen} = DecodeType(reader)
-    data.descriptors().decode(reader, typ, true, valueLen, data)
-}
-
-/** 兼容旧导出：FromMap（hrpc 层使用）。 */
-export type FromMap = (map: Record<string, any>) => any
-
-/** Data 抽象类（兼容原有 JSON codec 用法）。 */
-export abstract class Data {
-    public abstract toMap(): Record<string, any>;
+    const d = desc ?? data.descriptors()
+    d.decode(reader, typ, true, valueLen, data)
 }
 
 export function isHData(obj: any): obj is HData {

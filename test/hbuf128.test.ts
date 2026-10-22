@@ -1,6 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert";
 import * as fs from "node:fs";
+import Decimal from "decimal.js";
 import {
     DataDescriptor,
     Descriptor,
@@ -500,6 +501,11 @@ function deepEq(a: any, b: any, path = "$"): void {
         assert.strictEqual(a, b, path)
         return
     }
+    if (a instanceof Decimal || b instanceof Decimal) {
+        // decimal 字段：源为字符串、fromJson 后为 Decimal 实例，按数值相等比较
+        assert.ok(new Decimal(a).eq(b), path)
+        return
+    }
     if (typeof a !== typeof b) {
         assert.strictEqual(typeof a, typeof b, path + " typeof")
         return
@@ -565,3 +571,12 @@ test("HBufTest 128 字段: TS round-trip", () => {
     Unmarshal(Marshal(src), dst)
     deepEq(dst, src)
 })
+
+test("toJson/fromJson: 128 字段 JSON 往返语义一致", () => {
+    const src = buildFull()
+    const dst = hbTestDesc.fromJson(hbTestDesc.toJson(src)) as HBufTestTs
+    // decimal 字段经 fromJson 后为 Decimal 实例（与源字符串数值相等），deepEq 已兼容
+    deepEq(dst, src)
+})
+
+

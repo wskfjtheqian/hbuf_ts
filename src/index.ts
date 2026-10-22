@@ -10,7 +10,6 @@ import {
     Result,
     Server,
 } from "./hrpc/rpc";
-import {Data} from "./hbuf/data";
 import {
     BoolDescriptor,
     BytesDescriptor,
@@ -46,7 +45,6 @@ import {
 } from "./utils/tools";
 
 export {
-    Data,
     Client,
     HttpClient,
     FetchClient,
@@ -91,7 +89,6 @@ export {
 };
 
 export default {
-    Data,
     Client,
     HttpClient,
     FetchClient,
@@ -158,7 +155,6 @@ export type {
 } from "./hrpc/websocket";
 
 export type {
-    FromMap,
     HData,
 } from "./hbuf/data";
 

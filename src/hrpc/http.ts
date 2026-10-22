@@ -1,5 +1,5 @@
-import {BufferType, Decoder, Encoder, NewJsonDecoder, NewJsonEncode, Option, RequestType, ResponseType} from "./rpc";
-import {Data, FromMap} from "../hbuf/data";
+import {BufferType, Decoder, Encoder, NewJsonDecoder, NewJsonEncode, NewResultDesc, Option, RequestType, ResponseType} from "./rpc";
+import {DataDescriptor} from "../hbuf/descriptor";
 import {isData, traceId} from "../utils/tools";
 
 
@@ -21,11 +21,12 @@ export class HttpClient {
 
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType> {
-        const body = isData(req) ? this.encode(req as Data) : req as BufferType
+    public async request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType> {
+        const body = isData(req) ? this.encode(req as any) : req as BufferType
         const resp = await this.fetch(path, body, opt)
-        if (from) {
-            return this.decode(((resp instanceof Blob) ? await resp.arrayBuffer() : resp), from)
+        if (desc) {
+            // 响应为 Result 包装（code/msg + data），按响应描述符解码
+            return this.decode(((resp instanceof Blob) ? await resp.arrayBuffer() : resp), NewResultDesc(desc))
         } else {
             return resp
         }
@@ -65,11 +66,12 @@ export class FetchClient {
 
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType> {
-        const body = isData(req) ? this.encode(req as Data) : req as BufferType
+    public async request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType> {
+        const body = isData(req) ? this.encode(req as any) : req as BufferType
         const resp = await this.fetch(path, body, opt)
-        if (from) {
-            return this.decode(((resp instanceof Blob) ? await resp.arrayBuffer() : resp), from)
+        if (desc) {
+            // 响应为 Result 包装（code/msg + data），按响应描述符解码
+            return this.decode(((resp instanceof Blob) ? await resp.arrayBuffer() : resp), NewResultDesc(desc))
         } else {
             return resp
         }

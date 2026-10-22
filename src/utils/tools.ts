@@ -89,7 +89,7 @@ export function formatDate(date: Date | string | number, format?: string): strin
 }
 
 export function isData(obj: any): boolean {
-    return obj && typeof obj.toMap === 'function';
+    return obj && typeof obj.descriptors === 'function';
 }
 
 // 预定义 Base62 的字符集（共 62 个字符，与 Go 完全一致）

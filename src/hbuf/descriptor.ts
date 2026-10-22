@@ -810,16 +810,17 @@ export class TimeDescriptor implements Descriptor {
     }
 
     fromJson(json: JsonValue) {
-        if (json !== null) {
+        if (json != null) {
             if (typeof json === "number" || typeof json === "string") {
                 return new Date(Number(json))
             }
         }
-        return this.isPtr ? null : new Date(0)
+        // 与 zero()/decode 一致：零时间恒用 null 表示（无论是否可空）
+        return null
     }
 
     toJson(v: any): JsonValue {
-        return v == null ? undefined : String((v as Date).getDate())
+        return v == null ? undefined : String((v as Date).getTime())
     }
 
     public zero(): any {
@@ -868,13 +869,21 @@ export class TimeDescriptor implements Descriptor {
     }
 }
 
-/** Decimal：以字符串承载（wire 上为十进制文本）。 */
+/** decimal 统一转十进制文本：Decimal 实例用固定点全精度（toString 大数会指数化，破坏 wire 文本）。 */
+function DecimalToStr(v: any): string {
+    if (v instanceof Decimal) {
+        return v.toFixed(Math.max(0, v.decimalPlaces()))
+    }
+    return String(v)
+}
+
+/** Decimal：以 decimal.js Decimal 承载（wire 上为十进制文本）。 */
 export class DecimalDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
     fromJson(json: JsonValue) {
-        if (json !== null) {
+        if (json != null) {
             if (typeof json === "string" || typeof json === "number") {
                 return new Decimal(json)
             }
@@ -883,11 +892,11 @@ export class DecimalDescriptor implements Descriptor {
     }
 
     toJson(v: any): JsonValue {
-        return v == null ? undefined : (v as Decimal).toString()
+        return v == null ? undefined : DecimalToStr(v)
     }
 
     public zero(): any {
-        return this.isPtr ? null : "0"
+        return this.isPtr ? null : new Decimal(0)
     }
 
     public isEmpty(v: any): boolean {
@@ -902,7 +911,7 @@ export class DecimalDescriptor implements Descriptor {
             if (this.isEmpty(v)) {
                 return
             }
-            const val = utf8Encode(v)
+            const val = utf8Encode(DecimalToStr(v))
             WriterType(buf, Type.TBytes, LengthId(id), LengthUint(BigInt(val.length)))
             WriterId(buf, id)
             EncodeUint64(buf, BigInt(val.length))
@@ -912,7 +921,7 @@ export class DecimalDescriptor implements Descriptor {
                 WriterType(buf, Type.TBytes, 0, 1)
                 return
             }
-            const val = utf8Encode(v)
+            const val = utf8Encode(DecimalToStr(v))
             if (Number(v) === 0 || val.length === 0) {
                 WriterType(buf, Type.TBytes, 0, 1)
                 return
@@ -924,35 +933,35 @@ export class DecimalDescriptor implements Descriptor {
     }
 
     public decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any {
-        let val: string
+        let val: Decimal
         switch (typ) {
             case Type.TBool:
-                val = valueLen === 2 ? "1" : "0"
+                val = valueLen === 2 ? new Decimal(1) : new Decimal(0)
                 break
             case Type.TInt:
-                val = valRead ? DecodeInt64(r, valueLen).toString() : "0"
+                val = new Decimal(valRead ? DecodeInt64(r, valueLen).toString() : "0")
                 break
             case Type.TUint:
-                val = valRead ? DecodeUint64(r, valueLen).toString() : "0"
+                val = new Decimal(valRead ? DecodeUint64(r, valueLen).toString() : "0")
                 break
             case Type.TFloat: {
                 if (!valRead) {
-                    val = "0"
+                    val = new Decimal(0)
                     break
                 }
                 const bits = DecodeUint64(r, valueLen)
-                val = (valueLen <= 4
+                val = new Decimal((valueLen <= 4
                     ? Float32FromBits(bits & 0xFFFFFFFFn)
-                    : Float64FromBits(bits)).toString()
+                    : Float64FromBits(bits)).toString())
                 break
             }
             case Type.TBytes: {
                 if (!valRead) {
-                    val = "0"
+                    val = new Decimal(0)
                     break
                 }
                 const size = DecodeUint64(r, valueLen)
-                val = utf8Decode(r.readBytes(Number(size)))
+                val = new Decimal(utf8Decode(r.readBytes(Number(size))))
                 break
             }
             default:
@@ -968,12 +977,22 @@ export class ListDescriptor implements Descriptor {
     }
 
     fromJson(json: JsonValue) {
-        throw new Error("Method not implemented.");
+        if (Array.isArray(json)) {
+            const list: any[] = []
+            for (const item of json) {
+                list.push(this.desc.fromJson(item))
+            }
+            return list
+        }
+        return this.isPtr ? null : []
     }
 
     toJson(v: any): JsonValue {
+        if (v == null) {
+            return null
+        }
         const list: JsonValue[] = []
-        for (const item of (v as any[])) {
+        for (const item of v) {
             list.push(this.desc.toJson(item))
         }
         return list
@@ -1047,7 +1066,7 @@ export class MapDescriptor implements Descriptor {
     }
 
     fromJson(json: JsonValue): any {
-        if (json !== null) {
+        if (json != null) {
             const _json = json as Record<string, JsonValue>
             const map = new Map()
             for (const [k, v] of Object.entries(_json)) {
@@ -1059,6 +1078,9 @@ export class MapDescriptor implements Descriptor {
     }
 
     toJson(val: any): JsonValue {
+        if (val == null) {
+            return null
+        }
         const map: Record<string, JsonValue> = {}
         for (const [k, v] of val) {
             map[String(this.keyDesc.toJson(k))] = this.valueDesc.toJson(v)
@@ -1141,7 +1163,7 @@ type Field = FieldDesc & { id: number }
  * DataDescriptor：字段按 ID 升序编码，尾部跟 EXTENDS-BLOCK。
  */
 export class DataDescriptor implements Descriptor {
-    private factory: () => any
+    public factory: () => any
     private fields: Field[]          // 按 ID 升序
     private fieldMap: Map<number, FieldDesc>
     private extends_: Field[]        // 按扩展 ID 升序
@@ -1158,7 +1180,7 @@ export class DataDescriptor implements Descriptor {
     }
 
     fromJson(json: JsonValue): any {
-        if (json !== null) {
+        if (json != null) {
             const ret: any = this.factory()
             for (const field of this.fields) {
                 const _json = json as Record<string, JsonValue>
@@ -1170,6 +1192,9 @@ export class DataDescriptor implements Descriptor {
     }
 
     public toJson(v: any): JsonValue {
+        if (v == null) {
+            return null
+        }
         const ret: Record<string, any> = {}
         for (const field of this.fields) {
             ret[field.name] = field.desc.toJson(field.get(v))
@@ -1302,10 +1327,16 @@ export class RefDescriptor implements Descriptor {
     }
 
     toJson(v: any): JsonValue {
+        if (v == null) {
+            return null
+        }
         return this.desc.toJson(v)
     }
 
     fromJson(json: JsonValue) {
+        if (json == null && this.isPtr) {
+            return null
+        }
         return this.desc.fromJson(json)
     }
 
@@ -1353,11 +1384,11 @@ export class SyncDescriptor implements Descriptor {
     }
 
     toJson(v: any): JsonValue {
-        return this.cached?.toJson(v)
+        return this.Desc().toJson(v)
     }
 
     fromJson(json: JsonValue): any {
-        return this.cached?.fromJson(json)
+        return this.Desc().fromJson(json)
     }
 
     public Desc(): Descriptor {

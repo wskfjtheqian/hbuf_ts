@@ -3,6 +3,7 @@
 import {test} from "node:test"
 import assert from "node:assert/strict"
 import * as fs from "node:fs"
+import Decimal from "decimal.js"
 import {HData, Marshal, Unmarshal, Writer} from "../src/hbuf/data"
 import {
     Descriptor, FieldDesc, BoolDescriptor, BytesDescriptor, DataDescriptor, DecimalDescriptor,
@@ -259,6 +260,8 @@ test("对齐: 跨类型矩阵解码结果与 Go 一致（14 字段 x 5 输入）
                 got = Buffer.from(got).toString("base64") // 与 Go JSON 的 []byte base64 编码一致
             } else if (typeof got === "bigint") {
                 got = Number(got) // Go JSON 中 int64/uint64 为数字
+            } else if (got instanceof Decimal) {
+                got = got.toString() // 与 Go JSON 的 decimal 字符串一致
             }
             assert.deepStrictEqual(got, golden.crossMatrix[name][i], `${name} <- 输入[${i}]`)
         }
