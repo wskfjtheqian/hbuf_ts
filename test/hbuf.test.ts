@@ -5,21 +5,20 @@ import {
     Descriptor,
     FieldDesc,
     HData,
+    Int64Descriptor,
+    StringDescriptor,
+    BoolDescriptor,
+    Uint8Descriptor,
+    DoubleDescriptor,
+    TimeDescriptor,
+    DecimalDescriptor,
+    BytesDescriptor,
+    ListDescriptor,
+    MapDescriptor,
+    RefDescriptor,
+    Int8Descriptor,
+    Uint64Descriptor,
     Marshal,
-    NewDataDescriptor,
-    NewInt64Descriptor,
-    NewStringDescriptor,
-    NewBoolDescriptor,
-    NewUint8Descriptor,
-    NewDoubleDescriptor,
-    NewTimeDescriptor,
-    NewDecimalDescriptor,
-    NewBytesDescriptor,
-    NewListDescriptor,
-    NewMapDescriptor,
-    NewRefDescriptor,
-    NewInt8Descriptor,
-    NewUint64Descriptor,
     Unmarshal,
 } from "../src";
 
@@ -34,11 +33,11 @@ class GSubTs implements HData {
     }
 }
 
-const gSubDesc: DataDescriptor = NewDataDescriptor(
+const gSubDesc: DataDescriptor = new DataDescriptor(
     () => new GSubTs(),
     new Map<number, FieldDesc>([
-        [1, {desc: NewInt64Descriptor(), get: (o: GSubTs) => o.s1, set: (o: GSubTs, v) => o.s1 = v}],
-        [2, {desc: NewStringDescriptor(), get: (o: GSubTs) => o.s2, set: (o: GSubTs, v) => o.s2 = v}],
+        [1, {name: "s1", desc: new Int64Descriptor(), get: (o: GSubTs) => o.s1, set: (o: GSubTs, v) => o.s1 = v}],
+        [2, {name: "s2", desc: new StringDescriptor(), get: (o: GSubTs) => o.s2, set: (o: GSubTs, v) => o.s2 = v}],
     ]),
 )
 
@@ -64,24 +63,44 @@ class GDataTs implements HData {
     }
 }
 
-const gDataDesc: DataDescriptor = NewDataDescriptor(
+const gDataDesc: DataDescriptor = new DataDescriptor(
     () => new GDataTs(),
     new Map<number, FieldDesc>([
-        [1, {desc: NewInt64Descriptor(), get: (o: GDataTs) => o.f1, set: (o: GDataTs, v) => o.f1 = v}],
-        [2, {desc: NewInt64Descriptor(true), get: (o: GDataTs) => o.f2, set: (o: GDataTs, v) => o.f2 = v}],
-        [3, {desc: NewStringDescriptor(), get: (o: GDataTs) => o.f3, set: (o: GDataTs, v) => o.f3 = v}],
-        [4, {desc: NewBoolDescriptor(), get: (o: GDataTs) => o.f4, set: (o: GDataTs, v) => o.f4 = v}],
-        [5, {desc: NewUint8Descriptor(), get: (o: GDataTs) => o.f5, set: (o: GDataTs, v) => o.f5 = v}],
-        [6, {desc: NewDoubleDescriptor(), get: (o: GDataTs) => o.f6, set: (o: GDataTs, v) => o.f6 = v}],
-        [7, {desc: NewTimeDescriptor(), get: (o: GDataTs) => o.f7, set: (o: GDataTs, v) => o.f7 = v}],
-        [8, {desc: NewDecimalDescriptor(), get: (o: GDataTs) => o.f8, set: (o: GDataTs, v) => o.f8 = v}],
-        [9, {desc: NewBytesDescriptor(), get: (o: GDataTs) => o.f9, set: (o: GDataTs, v) => o.f9 = v}],
-        [10, {desc: NewListDescriptor(NewInt64Descriptor()), get: (o: GDataTs) => o.f10, set: (o: GDataTs, v) => o.f10 = v}],
-        [11, {desc: NewMapDescriptor(NewStringDescriptor(), NewStringDescriptor()), get: (o: GDataTs) => o.f11, set: (o: GDataTs, v) => o.f11 = v}],
-        [12, {desc: NewRefDescriptor(gSubDesc), get: (o: GDataTs) => o.f12, set: (o: GDataTs, v) => o.f12 = v}],
-        [13, {desc: NewRefDescriptor(gSubDesc), get: (o: GDataTs) => o.f13, set: (o: GDataTs, v) => o.f13 = v}],
-        [14, {desc: NewListDescriptor(NewInt64Descriptor(true)), get: (o: GDataTs) => o.f14, set: (o: GDataTs, v) => o.f14 = v}],
-        [15, {desc: NewListDescriptor(NewUint8Descriptor()), get: (o: GDataTs) => o.f15, set: (o: GDataTs, v) => o.f15 = v}],
+        [1, {name: "f1", desc: new Int64Descriptor(), get: (o: GDataTs) => o.f1, set: (o: GDataTs, v) => o.f1 = v}],
+        [2, {name: "f2", desc: new Int64Descriptor(true), get: (o: GDataTs) => o.f2, set: (o: GDataTs, v) => o.f2 = v}],
+        [3, {name: "f3", desc: new StringDescriptor(), get: (o: GDataTs) => o.f3, set: (o: GDataTs, v) => o.f3 = v}],
+        [4, {name: "f4", desc: new BoolDescriptor(), get: (o: GDataTs) => o.f4, set: (o: GDataTs, v) => o.f4 = v}],
+        [5, {name: "f5", desc: new Uint8Descriptor(), get: (o: GDataTs) => o.f5, set: (o: GDataTs, v) => o.f5 = v}],
+        [6, {name: "f6", desc: new DoubleDescriptor(), get: (o: GDataTs) => o.f6, set: (o: GDataTs, v) => o.f6 = v}],
+        [7, {name: "f7", desc: new TimeDescriptor(), get: (o: GDataTs) => o.f7, set: (o: GDataTs, v) => o.f7 = v}],
+        [8, {name: "f8", desc: new DecimalDescriptor(), get: (o: GDataTs) => o.f8, set: (o: GDataTs, v) => o.f8 = v}],
+        [9, {name: "f9", desc: new BytesDescriptor(), get: (o: GDataTs) => o.f9, set: (o: GDataTs, v) => o.f9 = v}],
+        [10, {
+            name: "f10",
+            desc: new ListDescriptor(new Int64Descriptor()),
+            get: (o: GDataTs) => o.f10,
+            set: (o: GDataTs, v) => o.f10 = v
+        }],
+        [11, {
+            name: "f11",
+            desc: new MapDescriptor(new StringDescriptor(), new StringDescriptor()),
+            get: (o: GDataTs) => o.f11,
+            set: (o: GDataTs, v) => o.f11 = v
+        }],
+        [12, {name: "f12", desc: new RefDescriptor(gSubDesc), get: (o: GDataTs) => o.f12, set: (o: GDataTs, v) => o.f12 = v}],
+        [13, {name: "f13", desc: new RefDescriptor(gSubDesc), get: (o: GDataTs) => o.f13, set: (o: GDataTs, v) => o.f13 = v}],
+        [14, {
+            name: "f14",
+            desc: new ListDescriptor(new Int64Descriptor(true)),
+            get: (o: GDataTs) => o.f14,
+            set: (o: GDataTs, v) => o.f14 = v
+        }],
+        [15, {
+            name: "f15",
+            desc: new ListDescriptor(new Uint8Descriptor()),
+            get: (o: GDataTs) => o.f15,
+            set: (o: GDataTs, v) => o.f15 = v
+        }],
     ]),
 )
 
@@ -200,11 +219,11 @@ test("uint8 特例: 可空 uint8 值 0 也省略", () => {
         }
     }
 
-    const u8Desc = NewDataDescriptor(
+    const u8Desc = new DataDescriptor(
         () => new U8Ts(),
         new Map<number, FieldDesc>([
-            [1, {desc: NewUint8Descriptor(true), get: (o: U8Ts) => o.a, set: (o: U8Ts, v) => o.a = v}],
-            [2, {desc: NewUint8Descriptor(), get: (o: U8Ts) => o.b, set: (o: U8Ts, v) => o.b = v}],
+            [1, {name: "a", desc: new Uint8Descriptor(true), get: (o: U8Ts) => o.a, set: (o: U8Ts, v) => o.a = v}],
+            [2, {name: "b", desc: new Uint8Descriptor(), get: (o: U8Ts) => o.b, set: (o: U8Ts, v) => o.b = v}],
         ]),
     )
 
@@ -256,13 +275,13 @@ test("extends: 扩展字段 round-trip", () => {
         b: string = ""
     }
 
-    const baseDesc = NewDataDescriptor(
+    const baseDesc = new DataDescriptor(
         () => new ExtTs(),
         new Map<number, FieldDesc>([
-            [1, {desc: NewInt64Descriptor(), get: (o: BaseTs) => o.a, set: (o: BaseTs, v) => o.a = v}],
+            [1, {name: "a", desc: new Int64Descriptor(), get: (o: BaseTs) => o.a, set: (o: BaseTs, v) => o.a = v}],
         ]),
         new Map<number, FieldDesc>([
-            [2, {desc: NewStringDescriptor(), get: (o: ExtTs) => o.b, set: (o: ExtTs, v) => o.b = v}],
+            [2, {name: "b", desc: new StringDescriptor(), get: (o: ExtTs) => o.b, set: (o: ExtTs, v) => o.b = v}],
         ]),
     )
 
@@ -285,11 +304,11 @@ test("64 位大整数保真", () => {
         }
     }
 
-    const bigDesc = NewDataDescriptor(
+    const bigDesc = new DataDescriptor(
         () => new BigTs(),
         new Map<number, FieldDesc>([
-            [1, {desc: NewInt64Descriptor(), get: (o: BigTs) => o.i, set: (o: BigTs, v) => o.i = v}],
-            [2, {desc: NewUint64Descriptor(), get: (o: BigTs) => o.u, set: (o: BigTs, v) => o.u = v}],
+            [1, {name: "i", desc: new Int64Descriptor(), get: (o: BigTs) => o.i, set: (o: BigTs, v) => o.i = v}],
+            [2, {name: "u", desc: new Uint64Descriptor(), get: (o: BigTs) => o.u, set: (o: BigTs, v) => o.u = v}],
         ]),
     )
 
@@ -311,10 +330,10 @@ test("int8 溢出截断与 Go 一致", () => {
         }
     }
 
-    const i8Desc = NewDataDescriptor(
+    const i8Desc = new DataDescriptor(
         () => new I8Ts(),
         new Map<number, FieldDesc>([
-            [1, {desc: NewInt8Descriptor(), get: (o: I8Ts) => o.a, set: (o: I8Ts, v) => o.a = v}],
+            [1, {name: "a", desc: new Int8Descriptor(), get: (o: I8Ts) => o.a, set: (o: I8Ts, v) => o.a = v}],
         ]),
     )
 

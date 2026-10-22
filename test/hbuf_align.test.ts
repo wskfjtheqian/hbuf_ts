@@ -5,10 +5,10 @@ import assert from "node:assert/strict"
 import * as fs from "node:fs"
 import {HData, Marshal, Unmarshal, Writer} from "../src/hbuf/data"
 import {
-    Descriptor, FieldDesc, NewBoolDescriptor, NewBytesDescriptor, NewDataDescriptor, NewDecimalDescriptor,
-    NewDoubleDescriptor, NewFloatDescriptor, NewInt8Descriptor, NewInt16Descriptor, NewInt32Descriptor,
-    NewInt64Descriptor, NewListDescriptor, NewMapDescriptor, NewRefDescriptor, NewStringDescriptor,
-    NewUint8Descriptor, NewUint16Descriptor, NewUint32Descriptor, NewUint64Descriptor,
+    Descriptor, FieldDesc, BoolDescriptor, BytesDescriptor, DataDescriptor, DecimalDescriptor,
+    DoubleDescriptor, FloatDescriptor, Int8Descriptor, Int16Descriptor, Int32Descriptor,
+    Int64Descriptor, ListDescriptor, MapDescriptor, RefDescriptor, StringDescriptor,
+    Uint8Descriptor, Uint16Descriptor, Uint32Descriptor, Uint64Descriptor,
 } from "../src/hbuf/descriptor"
 import {EncodeUint64, LengthId, LengthUint, WriterId, WriterInt64, WriterType} from "../src/hbuf/encoder"
 import {Type} from "../src/hbuf/data"
@@ -32,11 +32,11 @@ class AlignSubTs implements HData {
     }
 }
 
-const alignSubDesc: Descriptor = NewDataDescriptor(
+const alignSubDesc: Descriptor = new DataDescriptor(
     () => new AlignSubTs(),
     new Map<number, FieldDesc>([
-        [1, {desc: NewInt64Descriptor(false), get: (o: AlignSubTs) => o.a1, set: (o: AlignSubTs, v) => o.a1 = v}],
-        [2, {desc: NewInt64Descriptor(true), get: (o: AlignSubTs) => o.a2, set: (o: AlignSubTs, v) => o.a2 = v}],
+        [1, {name: "a1", desc: new Int64Descriptor(false), get: (o: AlignSubTs) => o.a1, set: (o: AlignSubTs, v) => o.a1 = v}],
+        [2, {name: "a2", desc: new Int64Descriptor(true), get: (o: AlignSubTs) => o.a2, set: (o: AlignSubTs, v) => o.a2 = v}],
     ]),
 )
 
@@ -54,16 +54,16 @@ class AlignTs implements HData {
     }
 }
 
-const alignDesc: Descriptor = NewDataDescriptor(
+const alignDesc: Descriptor = new DataDescriptor(
     () => new AlignTs(),
     new Map<number, FieldDesc>([
-        [4, {desc: NewListDescriptor(NewInt16Descriptor(false), true), get: (o: AlignTs) => o.v4, set: (o: AlignTs, v) => o.v4 = v}],
-        [5, {desc: NewMapDescriptor(NewInt64Descriptor(false), NewInt16Descriptor(false), true), get: (o: AlignTs) => o.v5, set: (o: AlignTs, v) => o.v5 = v}],
-        [31, {desc: NewRefDescriptor(alignSubDesc, false), get: (o: AlignTs) => o.v31, set: (o: AlignTs, v) => o.v31 = v}],
-        [32, {desc: NewRefDescriptor(alignSubDesc, true), get: (o: AlignTs) => o.v32, set: (o: AlignTs, v) => o.v32 = v}],
-        [53, {desc: NewListDescriptor(NewBytesDescriptor(false), false), get: (o: AlignTs) => o.v53, set: (o: AlignTs, v) => o.v53 = v}],
-        [63, {desc: NewListDescriptor(NewRefDescriptor(alignSubDesc, false), false), get: (o: AlignTs) => o.v63, set: (o: AlignTs, v) => o.v63 = v}],
-        [64, {desc: NewListDescriptor(NewRefDescriptor(alignSubDesc, true), false), get: (o: AlignTs) => o.v64, set: (o: AlignTs, v) => o.v64 = v}],
+        [4, {name: "v4", desc: new ListDescriptor(new Int16Descriptor(false), true), get: (o: AlignTs) => o.v4, set: (o: AlignTs, v) => o.v4 = v}],
+        [5, {name: "v5", desc: new MapDescriptor(new Int64Descriptor(false), new Int16Descriptor(false), true), get: (o: AlignTs) => o.v5, set: (o: AlignTs, v) => o.v5 = v}],
+        [31, {name: "v31", desc: new RefDescriptor(alignSubDesc, false), get: (o: AlignTs) => o.v31, set: (o: AlignTs, v) => o.v31 = v}],
+        [32, {name: "v32", desc: new RefDescriptor(alignSubDesc, true), get: (o: AlignTs) => o.v32, set: (o: AlignTs, v) => o.v32 = v}],
+        [53, {name: "v53", desc: new ListDescriptor(new BytesDescriptor(false), false), get: (o: AlignTs) => o.v53, set: (o: AlignTs, v) => o.v53 = v}],
+        [63, {name: "v63", desc: new ListDescriptor(new RefDescriptor(alignSubDesc, false), false), get: (o: AlignTs) => o.v63, set: (o: AlignTs, v) => o.v63 = v}],
+        [64, {name: "v64", desc: new ListDescriptor(new RefDescriptor(alignSubDesc, true), false), get: (o: AlignTs) => o.v64, set: (o: AlignTs, v) => o.v64 = v}],
     ]),
 )
 
@@ -101,23 +101,23 @@ class MatrixTs implements HData {
     }
 }
 
-const matrixDesc: Descriptor = NewDataDescriptor(
+const matrixDesc: Descriptor = new DataDescriptor(
     () => new MatrixTs(),
     new Map<number, FieldDesc>([
-        [1, {desc: NewInt8Descriptor(false), get: (o: MatrixTs) => o.v1, set: (o: MatrixTs, v) => o.v1 = v}],
-        [3, {desc: NewInt16Descriptor(false), get: (o: MatrixTs) => o.v3, set: (o: MatrixTs, v) => o.v3 = v}],
-        [5, {desc: NewInt32Descriptor(false), get: (o: MatrixTs) => o.v5, set: (o: MatrixTs, v) => o.v5 = v}],
-        [7, {desc: NewInt64Descriptor(false), get: (o: MatrixTs) => o.v7, set: (o: MatrixTs, v) => o.v7 = v}],
-        [9, {desc: NewUint8Descriptor(false), get: (o: MatrixTs) => o.v9, set: (o: MatrixTs, v) => o.v9 = v}],
-        [11, {desc: NewUint16Descriptor(false), get: (o: MatrixTs) => o.v11, set: (o: MatrixTs, v) => o.v11 = v}],
-        [13, {desc: NewUint32Descriptor(false), get: (o: MatrixTs) => o.v13, set: (o: MatrixTs, v) => o.v13 = v}],
-        [15, {desc: NewUint64Descriptor(false), get: (o: MatrixTs) => o.v15, set: (o: MatrixTs, v) => o.v15 = v}],
-        [17, {desc: NewBoolDescriptor(false), get: (o: MatrixTs) => o.v17, set: (o: MatrixTs, v) => o.v17 = v}],
-        [19, {desc: NewStringDescriptor(false), get: (o: MatrixTs) => o.v19, set: (o: MatrixTs, v) => o.v19 = v}],
-        [21, {desc: NewBytesDescriptor(false), get: (o: MatrixTs) => o.v21, set: (o: MatrixTs, v) => o.v21 = v}],
-        [23, {desc: NewFloatDescriptor(false), get: (o: MatrixTs) => o.v23, set: (o: MatrixTs, v) => o.v23 = v}],
-        [25, {desc: NewDoubleDescriptor(false), get: (o: MatrixTs) => o.v25, set: (o: MatrixTs, v) => o.v25 = v}],
-        [29, {desc: NewDecimalDescriptor(false), get: (o: MatrixTs) => o.v29, set: (o: MatrixTs, v) => o.v29 = v}],
+        [1, {name: "v1", desc: new Int8Descriptor(false), get: (o: MatrixTs) => o.v1, set: (o: MatrixTs, v) => o.v1 = v}],
+        [3, {name: "v3", desc: new Int16Descriptor(false), get: (o: MatrixTs) => o.v3, set: (o: MatrixTs, v) => o.v3 = v}],
+        [5, {name: "v5", desc: new Int32Descriptor(false), get: (o: MatrixTs) => o.v5, set: (o: MatrixTs, v) => o.v5 = v}],
+        [7, {name: "v7", desc: new Int64Descriptor(false), get: (o: MatrixTs) => o.v7, set: (o: MatrixTs, v) => o.v7 = v}],
+        [9, {name: "v9", desc: new Uint8Descriptor(false), get: (o: MatrixTs) => o.v9, set: (o: MatrixTs, v) => o.v9 = v}],
+        [11, {name: "v11", desc: new Uint16Descriptor(false), get: (o: MatrixTs) => o.v11, set: (o: MatrixTs, v) => o.v11 = v}],
+        [13, {name: "v13", desc: new Uint32Descriptor(false), get: (o: MatrixTs) => o.v13, set: (o: MatrixTs, v) => o.v13 = v}],
+        [15, {name: "v15", desc: new Uint64Descriptor(false), get: (o: MatrixTs) => o.v15, set: (o: MatrixTs, v) => o.v15 = v}],
+        [17, {name: "v17", desc: new BoolDescriptor(false), get: (o: MatrixTs) => o.v17, set: (o: MatrixTs, v) => o.v17 = v}],
+        [19, {name: "v19", desc: new StringDescriptor(false), get: (o: MatrixTs) => o.v19, set: (o: MatrixTs, v) => o.v19 = v}],
+        [21, {name: "v21", desc: new BytesDescriptor(false), get: (o: MatrixTs) => o.v21, set: (o: MatrixTs, v) => o.v21 = v}],
+        [23, {name: "v23", desc: new FloatDescriptor(false), get: (o: MatrixTs) => o.v23, set: (o: MatrixTs, v) => o.v23 = v}],
+        [25, {name: "v25", desc: new DoubleDescriptor(false), get: (o: MatrixTs) => o.v25, set: (o: MatrixTs, v) => o.v25 = v}],
+        [29, {name: "v29", desc: new DecimalDescriptor(false), get: (o: MatrixTs) => o.v29, set: (o: MatrixTs, v) => o.v29 = v}],
     ]),
 )
 

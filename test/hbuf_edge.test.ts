@@ -6,26 +6,25 @@ import {
     Descriptor,
     FieldDesc,
     HData,
+    Int8Descriptor,
+    Int16Descriptor,
+    Int32Descriptor,
+    Int64Descriptor,
+    Uint8Descriptor,
+    Uint64Descriptor,
+    FloatDescriptor,
+    DoubleDescriptor,
+    BoolDescriptor,
+    StringDescriptor,
+    BytesDescriptor,
+    TimeDescriptor,
+    DecimalDescriptor,
+    ListDescriptor,
+    MapDescriptor,
+    RefDescriptor,
+    SyncDescriptor,
     Marshal,
     Unmarshal,
-    NewDataDescriptor,
-    NewInt8Descriptor,
-    NewInt16Descriptor,
-    NewInt32Descriptor,
-    NewInt64Descriptor,
-    NewUint8Descriptor,
-    NewUint64Descriptor,
-    NewFloatDescriptor,
-    NewDoubleDescriptor,
-    NewBoolDescriptor,
-    NewStringDescriptor,
-    NewBytesDescriptor,
-    NewTimeDescriptor,
-    NewDecimalDescriptor,
-    NewListDescriptor,
-    NewMapDescriptor,
-    NewRefDescriptor,
-    NewSyncDescriptor,
 } from "../src";
 
 const golden = JSON.parse(fs.readFileSync(new URL("./golden_edge.json", import.meta.url), "utf-8")) as Record<string, string>
@@ -90,11 +89,11 @@ class HBufSubTestTs implements HData {
     }
 }
 
-const hbSubDesc: DataDescriptor = NewDataDescriptor(
+const hbSubDesc: DataDescriptor = new DataDescriptor(
     () => new HBufSubTestTs(),
     new Map<number, FieldDesc>([
-        [1, {desc: NewInt64Descriptor(), get: (o: HBufSubTestTs) => o.a1, set: (o: HBufSubTestTs, v) => o.a1 = v}],
-        [2, {desc: NewInt64Descriptor(true), get: (o: HBufSubTestTs) => o.a2, set: (o: HBufSubTestTs, v) => o.a2 = v}],
+        [1, {name: "a1", desc: new Int64Descriptor(), get: (o: HBufSubTestTs) => o.a1, set: (o: HBufSubTestTs, v) => o.a1 = v}],
+        [2, {name: "a2", desc: new Int64Descriptor(true), get: (o: HBufSubTestTs) => o.a2, set: (o: HBufSubTestTs, v) => o.a2 = v}],
     ]),
 )
 
@@ -124,22 +123,22 @@ class MapSingleTestTs implements HData {
     }
 }
 
-const mapSingleDesc: DataDescriptor = NewDataDescriptor(
+const mapSingleDesc: DataDescriptor = new DataDescriptor(
     () => new MapSingleTestTs(),
     new Map<number, FieldDesc>([
-        [1, {desc: NewMapDescriptor(NewInt64Descriptor(), NewInt8Descriptor(), false), get: (o: MapSingleTestTs) => o.v1, set: (o: MapSingleTestTs, v) => o.v1 = v}],
-        [2, {desc: NewMapDescriptor(NewInt64Descriptor(), NewInt64Descriptor(), false), get: (o: MapSingleTestTs) => o.v2, set: (o: MapSingleTestTs, v) => o.v2 = v}],
-        [3, {desc: NewMapDescriptor(NewStringDescriptor(), NewStringDescriptor(), false), get: (o: MapSingleTestTs) => o.v3, set: (o: MapSingleTestTs, v) => o.v3 = v}],
-        [4, {desc: NewMapDescriptor(NewInt64Descriptor(), NewInt8Descriptor(true), false), get: (o: MapSingleTestTs) => o.v4, set: (o: MapSingleTestTs, v) => o.v4 = v}],
-        [5, {desc: NewMapDescriptor(NewInt64Descriptor(), NewUint8Descriptor(), false), get: (o: MapSingleTestTs) => o.v5, set: (o: MapSingleTestTs, v) => o.v5 = v}],
-        [6, {desc: NewMapDescriptor(NewInt64Descriptor(), NewRefDescriptor(hbSubDesc), false), get: (o: MapSingleTestTs) => o.v6, set: (o: MapSingleTestTs, v) => o.v6 = v}],
-        [7, {desc: NewMapDescriptor(NewStringDescriptor(), NewRefDescriptor(hbSubDesc, true), false), get: (o: MapSingleTestTs) => o.v7, set: (o: MapSingleTestTs, v) => o.v7 = v}],
-        [8, {desc: NewMapDescriptor(NewInt64Descriptor(), NewDoubleDescriptor(), false), get: (o: MapSingleTestTs) => o.v8, set: (o: MapSingleTestTs, v) => o.v8 = v}],
-        [9, {desc: NewMapDescriptor(NewInt64Descriptor(), NewFloatDescriptor(), false), get: (o: MapSingleTestTs) => o.v9, set: (o: MapSingleTestTs, v) => o.v9 = v}],
-        [10, {desc: NewMapDescriptor(NewStringDescriptor(), NewTimeDescriptor(), false), get: (o: MapSingleTestTs) => o.v10, set: (o: MapSingleTestTs, v) => o.v10 = v}],
-        [11, {desc: NewMapDescriptor(NewInt64Descriptor(), NewDecimalDescriptor(), false), get: (o: MapSingleTestTs) => o.v11, set: (o: MapSingleTestTs, v) => o.v11 = v}],
-        [12, {desc: NewMapDescriptor(NewStringDescriptor(), NewBytesDescriptor(), false), get: (o: MapSingleTestTs) => o.v12, set: (o: MapSingleTestTs, v) => o.v12 = v}],
-        [13, {desc: NewMapDescriptor(NewStringDescriptor(), NewTimeDescriptor(), false), get: (o: MapSingleTestTs) => o.v13, set: (o: MapSingleTestTs, v) => o.v13 = v}],
+        [1, {name: "v1", desc: new MapDescriptor(new Int64Descriptor(), new Int8Descriptor(), false), get: (o: MapSingleTestTs) => o.v1, set: (o: MapSingleTestTs, v) => o.v1 = v}],
+        [2, {name: "v2", desc: new MapDescriptor(new Int64Descriptor(), new Int64Descriptor(), false), get: (o: MapSingleTestTs) => o.v2, set: (o: MapSingleTestTs, v) => o.v2 = v}],
+        [3, {name: "v3", desc: new MapDescriptor(new StringDescriptor(), new StringDescriptor(), false), get: (o: MapSingleTestTs) => o.v3, set: (o: MapSingleTestTs, v) => o.v3 = v}],
+        [4, {name: "v4", desc: new MapDescriptor(new Int64Descriptor(), new Int8Descriptor(true), false), get: (o: MapSingleTestTs) => o.v4, set: (o: MapSingleTestTs, v) => o.v4 = v}],
+        [5, {name: "v5", desc: new MapDescriptor(new Int64Descriptor(), new Uint8Descriptor(), false), get: (o: MapSingleTestTs) => o.v5, set: (o: MapSingleTestTs, v) => o.v5 = v}],
+        [6, {name: "v6", desc: new MapDescriptor(new Int64Descriptor(), new RefDescriptor(hbSubDesc), false), get: (o: MapSingleTestTs) => o.v6, set: (o: MapSingleTestTs, v) => o.v6 = v}],
+        [7, {name: "v7", desc: new MapDescriptor(new StringDescriptor(), new RefDescriptor(hbSubDesc, true), false), get: (o: MapSingleTestTs) => o.v7, set: (o: MapSingleTestTs, v) => o.v7 = v}],
+        [8, {name: "v8", desc: new MapDescriptor(new Int64Descriptor(), new DoubleDescriptor(), false), get: (o: MapSingleTestTs) => o.v8, set: (o: MapSingleTestTs, v) => o.v8 = v}],
+        [9, {name: "v9", desc: new MapDescriptor(new Int64Descriptor(), new FloatDescriptor(), false), get: (o: MapSingleTestTs) => o.v9, set: (o: MapSingleTestTs, v) => o.v9 = v}],
+        [10, {name: "v10", desc: new MapDescriptor(new StringDescriptor(), new TimeDescriptor(), false), get: (o: MapSingleTestTs) => o.v10, set: (o: MapSingleTestTs, v) => o.v10 = v}],
+        [11, {name: "v11", desc: new MapDescriptor(new Int64Descriptor(), new DecimalDescriptor(), false), get: (o: MapSingleTestTs) => o.v11, set: (o: MapSingleTestTs, v) => o.v11 = v}],
+        [12, {name: "v12", desc: new MapDescriptor(new StringDescriptor(), new BytesDescriptor(), false), get: (o: MapSingleTestTs) => o.v12, set: (o: MapSingleTestTs, v) => o.v12 = v}],
+        [13, {name: "v13", desc: new MapDescriptor(new StringDescriptor(), new TimeDescriptor(), false), get: (o: MapSingleTestTs) => o.v13, set: (o: MapSingleTestTs, v) => o.v13 = v}],
     ]),
 )
 
@@ -174,14 +173,14 @@ class Id2ByteTestTs implements HData {
     }
 }
 
-const id2ByteDesc: DataDescriptor = NewDataDescriptor(
+const id2ByteDesc: DataDescriptor = new DataDescriptor(
     () => new Id2ByteTestTs(),
     new Map<number, FieldDesc>([
-        [256, {desc: NewInt64Descriptor(), get: (o: Id2ByteTestTs) => o.v1, set: (o: Id2ByteTestTs, v) => o.v1 = v}],
-        [300, {desc: NewStringDescriptor(), get: (o: Id2ByteTestTs) => o.v2, set: (o: Id2ByteTestTs, v) => o.v2 = v}],
-        [65535, {desc: NewInt32Descriptor(true), get: (o: Id2ByteTestTs) => o.v3, set: (o: Id2ByteTestTs, v) => o.v3 = v}],
-        [257, {desc: NewBoolDescriptor(), get: (o: Id2ByteTestTs) => o.v4, set: (o: Id2ByteTestTs, v) => o.v4 = v}],
-        [500, {desc: NewBytesDescriptor(), get: (o: Id2ByteTestTs) => o.v5, set: (o: Id2ByteTestTs, v) => o.v5 = v}],
+        [256, {name: "v1", desc: new Int64Descriptor(), get: (o: Id2ByteTestTs) => o.v1, set: (o: Id2ByteTestTs, v) => o.v1 = v}],
+        [300, {name: "v2", desc: new StringDescriptor(), get: (o: Id2ByteTestTs) => o.v2, set: (o: Id2ByteTestTs, v) => o.v2 = v}],
+        [65535, {name: "v3", desc: new Int32Descriptor(true), get: (o: Id2ByteTestTs) => o.v3, set: (o: Id2ByteTestTs, v) => o.v3 = v}],
+        [257, {name: "v4", desc: new BoolDescriptor(), get: (o: Id2ByteTestTs) => o.v4, set: (o: Id2ByteTestTs, v) => o.v4 = v}],
+        [500, {name: "v5", desc: new BytesDescriptor(), get: (o: Id2ByteTestTs) => o.v5, set: (o: Id2ByteTestTs, v) => o.v5 = v}],
     ]),
 )
 
@@ -242,13 +241,13 @@ class IntBoundaryTestTs implements HData {
 
 const intBoundaryFields = new Map<number, FieldDesc>()
 for (let i = 1; i <= 29; i++) {
-    intBoundaryFields.set(i, {desc: NewInt64Descriptor(), get: (o: IntBoundaryTestTs) => (o as any)["v" + i], set: (o: IntBoundaryTestTs, v) => (o as any)["v" + i] = v})
+    intBoundaryFields.set(i, {name: "v" + i, desc: new Int64Descriptor(), get: (o: IntBoundaryTestTs) => (o as any)["v" + i], set: (o: IntBoundaryTestTs, v) => (o as any)["v" + i] = v})
 }
 for (let i = 30; i <= 37; i++) {
-    intBoundaryFields.set(i, {desc: NewUint64Descriptor(), get: (o: IntBoundaryTestTs) => (o as any)["v" + i], set: (o: IntBoundaryTestTs, v) => (o as any)["v" + i] = v})
+    intBoundaryFields.set(i, {name: "v" + i, desc: new Uint64Descriptor(), get: (o: IntBoundaryTestTs) => (o as any)["v" + i], set: (o: IntBoundaryTestTs, v) => (o as any)["v" + i] = v})
 }
 
-const intBoundaryDesc: DataDescriptor = NewDataDescriptor(() => new IntBoundaryTestTs(), intBoundaryFields)
+const intBoundaryDesc: DataDescriptor = new DataDescriptor(() => new IntBoundaryTestTs(), intBoundaryFields)
 
 const INT_BOUNDARY_VALUES: [number, bigint][] = [
     [1, 0n], [2, 127n], [3, 128n], [4, -1n], [5, -128n], [6, -129n], [7, 255n], [8, 256n],
@@ -280,13 +279,13 @@ class BigListTestTs implements HData {
     }
 }
 
-const bigListDesc: DataDescriptor = NewDataDescriptor(
+const bigListDesc: DataDescriptor = new DataDescriptor(
     () => new BigListTestTs(),
     new Map<number, FieldDesc>([
-        [1, {desc: NewListDescriptor(NewInt16Descriptor(), false), get: (o: BigListTestTs) => o.v1, set: (o: BigListTestTs, v) => o.v1 = v}],
-        [2, {desc: NewListDescriptor(NewUint8Descriptor(), false), get: (o: BigListTestTs) => o.v2, set: (o: BigListTestTs, v) => o.v2 = v}],
-        [3, {desc: NewListDescriptor(NewStringDescriptor(), false), get: (o: BigListTestTs) => o.v3, set: (o: BigListTestTs, v) => o.v3 = v}],
-        [4, {desc: NewListDescriptor(NewInt8Descriptor(true), false), get: (o: BigListTestTs) => o.v4, set: (o: BigListTestTs, v) => o.v4 = v}],
+        [1, {name: "v1", desc: new ListDescriptor(new Int16Descriptor(), false), get: (o: BigListTestTs) => o.v1, set: (o: BigListTestTs, v) => o.v1 = v}],
+        [2, {name: "v2", desc: new ListDescriptor(new Uint8Descriptor(), false), get: (o: BigListTestTs) => o.v2, set: (o: BigListTestTs, v) => o.v2 = v}],
+        [3, {name: "v3", desc: new ListDescriptor(new StringDescriptor(), false), get: (o: BigListTestTs) => o.v3, set: (o: BigListTestTs, v) => o.v3 = v}],
+        [4, {name: "v4", desc: new ListDescriptor(new Int8Descriptor(true), false), get: (o: BigListTestTs) => o.v4, set: (o: BigListTestTs, v) => o.v4 = v}],
     ]),
 )
 
@@ -301,11 +300,11 @@ function buildBigList(): BigListTestTs {
 
 // ================= 5. 深层递归嵌套 =================
 
-const deepDesc: Descriptor = NewSyncDescriptor(() => NewDataDescriptor(
+const deepDesc: Descriptor = new SyncDescriptor(() => new DataDescriptor(
     () => new DeepTestTs(),
     new Map<number, FieldDesc>([
-        [1, {desc: NewListDescriptor(NewRefDescriptor(deepDesc, true), false), get: (o: DeepTestTs) => o.v1, set: (o: DeepTestTs, v) => o.v1 = v}],
-        [3, {desc: NewRefDescriptor(deepDesc, true), get: (o: DeepTestTs) => o.v3, set: (o: DeepTestTs, v) => o.v3 = v}],
+        [1, {name: "v1", desc: new ListDescriptor(new RefDescriptor(deepDesc, true), false), get: (o: DeepTestTs) => o.v1, set: (o: DeepTestTs, v) => o.v1 = v}],
+        [3, {name: "v3", desc: new RefDescriptor(deepDesc, true), get: (o: DeepTestTs) => o.v3, set: (o: DeepTestTs, v) => o.v3 = v}],
     ]),
 ))
 
@@ -345,19 +344,19 @@ class FloatSpecTestTs implements HData {
     }
 }
 
-const floatSpecDesc: DataDescriptor = NewDataDescriptor(
+const floatSpecDesc: DataDescriptor = new DataDescriptor(
     () => new FloatSpecTestTs(),
     new Map<number, FieldDesc>([
-        [1, {desc: NewFloatDescriptor(), get: (o: FloatSpecTestTs) => o.v1, set: (o: FloatSpecTestTs, v) => o.v1 = v}],
-        [2, {desc: NewDoubleDescriptor(), get: (o: FloatSpecTestTs) => o.v2, set: (o: FloatSpecTestTs, v) => o.v2 = v}],
-        [3, {desc: NewFloatDescriptor(), get: (o: FloatSpecTestTs) => o.v3, set: (o: FloatSpecTestTs, v) => o.v3 = v}],
-        [4, {desc: NewDoubleDescriptor(), get: (o: FloatSpecTestTs) => o.v4, set: (o: FloatSpecTestTs, v) => o.v4 = v}],
-        [5, {desc: NewFloatDescriptor(), get: (o: FloatSpecTestTs) => o.v5, set: (o: FloatSpecTestTs, v) => o.v5 = v}],
-        [6, {desc: NewDoubleDescriptor(), get: (o: FloatSpecTestTs) => o.v6, set: (o: FloatSpecTestTs, v) => o.v6 = v}],
-        [7, {desc: NewFloatDescriptor(true), get: (o: FloatSpecTestTs) => o.v7, set: (o: FloatSpecTestTs, v) => o.v7 = v}],
-        [8, {desc: NewDoubleDescriptor(true), get: (o: FloatSpecTestTs) => o.v8, set: (o: FloatSpecTestTs, v) => o.v8 = v}],
-        [9, {desc: NewFloatDescriptor(), get: (o: FloatSpecTestTs) => o.v9, set: (o: FloatSpecTestTs, v) => o.v9 = v}],
-        [10, {desc: NewDoubleDescriptor(), get: (o: FloatSpecTestTs) => o.v10, set: (o: FloatSpecTestTs, v) => o.v10 = v}],
+        [1, {name: "v1", desc: new FloatDescriptor(), get: (o: FloatSpecTestTs) => o.v1, set: (o: FloatSpecTestTs, v) => o.v1 = v}],
+        [2, {name: "v2", desc: new DoubleDescriptor(), get: (o: FloatSpecTestTs) => o.v2, set: (o: FloatSpecTestTs, v) => o.v2 = v}],
+        [3, {name: "v3", desc: new FloatDescriptor(), get: (o: FloatSpecTestTs) => o.v3, set: (o: FloatSpecTestTs, v) => o.v3 = v}],
+        [4, {name: "v4", desc: new DoubleDescriptor(), get: (o: FloatSpecTestTs) => o.v4, set: (o: FloatSpecTestTs, v) => o.v4 = v}],
+        [5, {name: "v5", desc: new FloatDescriptor(), get: (o: FloatSpecTestTs) => o.v5, set: (o: FloatSpecTestTs, v) => o.v5 = v}],
+        [6, {name: "v6", desc: new DoubleDescriptor(), get: (o: FloatSpecTestTs) => o.v6, set: (o: FloatSpecTestTs, v) => o.v6 = v}],
+        [7, {name: "v7", desc: new FloatDescriptor(true), get: (o: FloatSpecTestTs) => o.v7, set: (o: FloatSpecTestTs, v) => o.v7 = v}],
+        [8, {name: "v8", desc: new DoubleDescriptor(true), get: (o: FloatSpecTestTs) => o.v8, set: (o: FloatSpecTestTs, v) => o.v8 = v}],
+        [9, {name: "v9", desc: new FloatDescriptor(), get: (o: FloatSpecTestTs) => o.v9, set: (o: FloatSpecTestTs, v) => o.v9 = v}],
+        [10, {name: "v10", desc: new DoubleDescriptor(), get: (o: FloatSpecTestTs) => o.v10, set: (o: FloatSpecTestTs, v) => o.v10 = v}],
     ]),
 )
 

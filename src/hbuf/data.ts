@@ -1,6 +1,8 @@
 import {Descriptor} from "./descriptor";
 import {DecodeType} from "./decoder";
 
+export type JsonValue = string | number | boolean | null | undefined | JsonValue[] | { [key: string]: JsonValue }
+
 /**
  * HBuf 值类型枚举，与 Go 版 data.go 完全一致。
  */

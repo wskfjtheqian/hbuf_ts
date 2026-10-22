@@ -99,10 +99,10 @@ export function traceId(): string {
     // 1. 获取当前毫秒时间戳（约占 41~42 位）
     const milli = BigInt(Date.now());
 
-    // 2. ⚡ 完美适配浏览器：使用 Web Crypto API 生成 9 字节安全随机数
+    // 2. ⚡ 使用全局 Web Crypto API 生成 9 字节安全随机数
     const randBuf = new Uint8Array(9);
-    // window.crypto 在现代浏览器、Edge 边缘计算及 Web Workers 中原生支持
-    window.crypto.getRandomValues(randBuf);
+    // 全局 crypto 在现代浏览器、Node 18+、Edge 边缘计算及 Web Workers 中原生支持
+    crypto.getRandomValues(randBuf);
 
     // 3. 将 9 字节随机数通过位移切出 65 位
     let random65 = 0n;

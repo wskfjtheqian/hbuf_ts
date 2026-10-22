@@ -1,6 +1,7 @@
-import {HBufError, Reader, Type, Writer} from "./data";
+import {HBufError, JsonValue, Reader, Type, Writer} from "./data";
 import {DecodeId, DecodeInt64, DecodeType, DecodeUint64, DecodeTime, SkipValue} from "./decoder";
 import {EncodeTime, EncodeUint64, LengthId, LengthInt, LengthUint, WriterId, WriterInt64, WriterType} from "./encoder";
+import Decimal from "decimal.js";
 
 const utf8Encoder = new TextEncoder()
 const utf8Decoder = new TextDecoder('utf-8')
@@ -39,7 +40,7 @@ function Float64FromBits(b: bigint): number {
 }
 
 /** Date 转（秒, 纳秒）。JS Date 为毫秒精度。 */
-function DateToTime(v: Date): {secs: bigint, nsec: number} {
+function DateToTime(v: Date): { secs: bigint, nsec: number } {
     const ms = v.getTime()
     return {
         secs: BigInt(Math.floor(ms / 1000)),
@@ -73,12 +74,20 @@ export interface Descriptor {
      * target 存在时（Data 类型）就地填充并返回该实例。
      */
     decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any
+
+    toJson(v: any): JsonValue
+
+    fromJson(json: JsonValue): any
 }
 
 /** 数值基类（int / uint 系） */
 abstract class IntBase implements Descriptor {
     protected constructor(protected isPtr = false) {
     }
+
+    abstract fromJson(json: JsonValue): any
+
+    abstract toJson(v: any): JsonValue
 
     abstract zero(): any
 
@@ -172,6 +181,19 @@ abstract class IntBase implements Descriptor {
 }
 
 class SignedInt extends IntBase {
+    fromJson(json: JsonValue) {
+        if (json !== null) {
+            if (typeof json === 'number' || typeof json === 'string') {
+                return Number(json)
+            }
+        }
+        return this.isPtr ? null : 0
+    }
+
+    toJson(v: any): JsonValue {
+        return v
+    }
+
     constructor(isPtr: boolean, private bits: number) {
         super(isPtr)
     }
@@ -202,6 +224,19 @@ class SignedInt extends IntBase {
 }
 
 class SignedLong extends IntBase {
+    fromJson(json: JsonValue) {
+        if (json !== null) {
+            if (typeof json === 'number' || typeof json === 'string') {
+                return BigInt(json)
+            }
+        }
+        return this.isPtr ? null : 0n
+    }
+
+    toJson(v: any): JsonValue {
+        return v?.toString()
+    }
+
     constructor(isPtr: boolean) {
         super(isPtr)
     }
@@ -232,6 +267,19 @@ class SignedLong extends IntBase {
 }
 
 class UnsignedInt extends IntBase {
+    fromJson(json: JsonValue) {
+        if (json !== null) {
+            if (typeof json === 'number' || typeof json === 'string') {
+                return Number(json)
+            }
+        }
+        return this.isPtr ? null : 0
+    }
+
+    toJson(v: any): JsonValue {
+        return v
+    }
+
     constructor(isPtr: boolean, private bits: number) {
         super(isPtr)
     }
@@ -262,6 +310,19 @@ class UnsignedInt extends IntBase {
 }
 
 class UnsignedLong extends IntBase {
+    fromJson(json: JsonValue) {
+        if (json !== null) {
+            if (typeof json === 'number' || typeof json === 'string') {
+                return BigInt(json)
+            }
+        }
+        return this.isPtr ? null : 0n
+    }
+
+    toJson(v: any): JsonValue {
+        return v?.toString()
+    }
+
     constructor(isPtr: boolean) {
         super(isPtr)
     }
@@ -357,6 +418,19 @@ export class Uint64Descriptor extends UnsignedLong {
 /** Float / Double 基类 */
 abstract class FloatBase implements Descriptor {
     protected constructor(protected isPtr = false, private isDouble: boolean) {
+    }
+
+    fromJson(json: JsonValue) {
+        if (json !== null) {
+            if (typeof json === 'number' || typeof json === 'string') {
+                return Number(json)
+            }
+        }
+        return this.isPtr ? null : 0
+    }
+
+    toJson(v: any): JsonValue {
+        return v == null ? undefined : this.isDouble ? v : Math.fround(v)
     }
 
     abstract zero(): any
@@ -470,6 +544,19 @@ export class BoolDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
+    fromJson(json: JsonValue) {
+        if (json !== null) {
+            if (typeof json === 'boolean' || typeof json === 'string') {
+                return Boolean(json)
+            }
+        }
+        return this.isPtr ? null : false
+    }
+
+    toJson(v: any): JsonValue {
+        return v
+    }
+
     public zero(): any {
         return this.isPtr ? null : false
     }
@@ -539,6 +626,19 @@ export class BoolDescriptor implements Descriptor {
 /** String：UTF-8 编码为 TBytes。 */
 export class StringDescriptor implements Descriptor {
     constructor(private isPtr = false) {
+    }
+
+    fromJson(json: JsonValue) {
+        if (json !== null) {
+            if (typeof json === 'string' || typeof json === 'number' || typeof json === 'boolean') {
+                return String(json)
+            }
+        }
+        return this.isPtr ? null : ""
+    }
+
+    toJson(v: any): JsonValue {
+        return v
     }
 
     public zero(): any {
@@ -622,6 +722,14 @@ export class BytesDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
+    fromJson(json: JsonValue) {
+        return json
+    }
+
+    toJson(v: any): JsonValue {
+        return v
+    }
+
     public zero(): any {
         return null
     }
@@ -701,6 +809,19 @@ export class TimeDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
+    fromJson(json: JsonValue) {
+        if (json !== null) {
+            if (typeof json === "number" || typeof json === "string") {
+                return new Date(Number(json))
+            }
+        }
+        return this.isPtr ? null : new Date(0)
+    }
+
+    toJson(v: any): JsonValue {
+        return v == null ? undefined : String((v as Date).getDate())
+    }
+
     public zero(): any {
         return null
     }
@@ -750,6 +871,19 @@ export class TimeDescriptor implements Descriptor {
 /** Decimal：以字符串承载（wire 上为十进制文本）。 */
 export class DecimalDescriptor implements Descriptor {
     constructor(private isPtr = false) {
+    }
+
+    fromJson(json: JsonValue) {
+        if (json !== null) {
+            if (typeof json === "string" || typeof json === "number") {
+                return new Decimal(json)
+            }
+        }
+        return this.isPtr ? null : new Decimal(0)
+    }
+
+    toJson(v: any): JsonValue {
+        return v == null ? undefined : (v as Decimal).toString()
     }
 
     public zero(): any {
@@ -833,6 +967,18 @@ export class ListDescriptor implements Descriptor {
     constructor(private desc: Descriptor, private isPtr = false) {
     }
 
+    fromJson(json: JsonValue) {
+        throw new Error("Method not implemented.");
+    }
+
+    toJson(v: any): JsonValue {
+        const list: JsonValue[] = []
+        for (const item of (v as any[])) {
+            list.push(this.desc.toJson(item))
+        }
+        return list
+    }
+
     public zero(): any {
         return null
     }
@@ -898,6 +1044,26 @@ export class ListDescriptor implements Descriptor {
 /** Map：key/value 均按「元素」规则编码。 */
 export class MapDescriptor implements Descriptor {
     constructor(private keyDesc: Descriptor, private valueDesc: Descriptor, private isPtr = false) {
+    }
+
+    fromJson(json: JsonValue): any {
+        if (json !== null) {
+            const _json = json as Record<string, JsonValue>
+            const map = new Map()
+            for (const [k, v] of Object.entries(_json)) {
+                map.set(this.keyDesc.fromJson(k), this.valueDesc.fromJson(v))
+            }
+            return map
+        }
+        return this.isPtr ? null : new Map()
+    }
+
+    toJson(val: any): JsonValue {
+        const map: Record<string, JsonValue> = {}
+        for (const [k, v] of val) {
+            map[String(this.keyDesc.toJson(k))] = this.valueDesc.toJson(v)
+        }
+        return map
     }
 
     public zero(): any {
@@ -966,9 +1132,10 @@ export type FieldDesc = {
     desc: Descriptor
     get: (o: any) => any
     set: (o: any, v: any) => void
+    name: string,
 }
 
-type Field = FieldDesc & {id: number}
+type Field = FieldDesc & { id: number }
 
 /**
  * DataDescriptor：字段按 ID 升序编码，尾部跟 EXTENDS-BLOCK。
@@ -988,6 +1155,26 @@ export class DataDescriptor implements Descriptor {
         this.fieldMap = fields
         this.extends_ = Array.from(extends_, ([id, f]) => ({...f, id})).sort((a, b) => a.id - b.id)
         this.extendMap = extends_
+    }
+
+    fromJson(json: JsonValue): any {
+        if (json !== null) {
+            const ret: any = this.factory()
+            for (const field of this.fields) {
+                const _json = json as Record<string, JsonValue>
+                field.set(ret, field.desc.fromJson(_json[field.name]))
+            }
+            return ret
+        }
+        return this.isPtr ? null : this.factory()
+    }
+
+    public toJson(v: any): JsonValue {
+        const ret: Record<string, any> = {}
+        for (const field of this.fields) {
+            ret[field.name] = field.desc.toJson(field.get(v))
+        }
+        return ret
     }
 
     public zero(): any {
@@ -1102,6 +1289,8 @@ export class DataDescriptor implements Descriptor {
         }
         return v
     }
+
+
 }
 
 /**
@@ -1110,6 +1299,14 @@ export class DataDescriptor implements Descriptor {
  */
 export class RefDescriptor implements Descriptor {
     constructor(private desc: Descriptor, private isPtr = false) {
+    }
+
+    toJson(v: any): JsonValue {
+        return this.desc.toJson(v)
+    }
+
+    fromJson(json: JsonValue) {
+        return this.desc.fromJson(json)
     }
 
     public zero(): any {
@@ -1155,6 +1352,14 @@ export class SyncDescriptor implements Descriptor {
     constructor(private f: () => Descriptor) {
     }
 
+    toJson(v: any): JsonValue {
+        return this.cached?.toJson(v)
+    }
+
+    fromJson(json: JsonValue): any {
+        return this.cached?.fromJson(json)
+    }
+
     public Desc(): Descriptor {
         if (!this.cached) {
             this.cached = this.f()
@@ -1177,86 +1382,4 @@ export class SyncDescriptor implements Descriptor {
     public decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any {
         return this.Desc().decode(r, typ, valRead, valueLen, target)
     }
-}
-
-// ===================== 工厂函数（与 Go 版命名一致） =====================
-
-export function NewDataDescriptor(factory: () => any, fields: Map<number, FieldDesc>, extends_?: Map<number, FieldDesc>, isPtr?: boolean): DataDescriptor {
-    return new DataDescriptor(factory, fields, extends_ ?? new Map(), isPtr ?? false)
-}
-
-export function NewRefDescriptor(desc: Descriptor, isPtr = false): RefDescriptor {
-    return new RefDescriptor(desc, isPtr)
-}
-
-export function NewListDescriptor(desc: Descriptor, isPtr = false): ListDescriptor {
-    return new ListDescriptor(desc, isPtr)
-}
-
-export function NewMapDescriptor(keyDesc: Descriptor, valueDesc: Descriptor, isPtr = false): MapDescriptor {
-    return new MapDescriptor(keyDesc, valueDesc, isPtr)
-}
-
-export function NewInt8Descriptor(isPtr = false): Int8Descriptor {
-    return new Int8Descriptor(isPtr)
-}
-
-export function NewInt16Descriptor(isPtr = false): Int16Descriptor {
-    return new Int16Descriptor(isPtr)
-}
-
-export function NewInt32Descriptor(isPtr = false): Int32Descriptor {
-    return new Int32Descriptor(isPtr)
-}
-
-export function NewInt64Descriptor(isPtr = false): Int64Descriptor {
-    return new Int64Descriptor(isPtr)
-}
-
-export function NewUint8Descriptor(isPtr = false): Uint8Descriptor {
-    return new Uint8Descriptor(isPtr)
-}
-
-export function NewUint16Descriptor(isPtr = false): Uint16Descriptor {
-    return new Uint16Descriptor(isPtr)
-}
-
-export function NewUint32Descriptor(isPtr = false): Uint32Descriptor {
-    return new Uint32Descriptor(isPtr)
-}
-
-export function NewUint64Descriptor(isPtr = false): Uint64Descriptor {
-    return new Uint64Descriptor(isPtr)
-}
-
-export function NewFloatDescriptor(isPtr = false): FloatDescriptor {
-    return new FloatDescriptor(isPtr)
-}
-
-export function NewDoubleDescriptor(isPtr = false): DoubleDescriptor {
-    return new DoubleDescriptor(isPtr)
-}
-
-export function NewBoolDescriptor(isPtr = false): BoolDescriptor {
-    return new BoolDescriptor(isPtr)
-}
-
-export function NewStringDescriptor(isPtr = false): StringDescriptor {
-    return new StringDescriptor(isPtr)
-}
-
-export function NewBytesDescriptor(isPtr = false): BytesDescriptor {
-    return new BytesDescriptor(isPtr)
-}
-
-export function NewTimeDescriptor(isPtr = false): TimeDescriptor {
-    return new TimeDescriptor(isPtr)
-}
-
-export function NewDecimalDescriptor(isPtr = false): DecimalDescriptor {
-    return new DecimalDescriptor(isPtr)
-}
-
-export function NewSyncDescriptor(f: () => Descriptor): SyncDescriptor {
-    return new SyncDescriptor(f)
 }
