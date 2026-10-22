@@ -1,4 +1,4 @@
-import {HBufError, HData, JsonValue, Marshal, Reader, Type, Unmarshal, Writer} from "../hbuf/data";
+import {HBufError, HData, isHData, JsonValue, Marshal, Reader, Type, Unmarshal, Writer} from "../hbuf/data";
 import {DataDescriptor, Descriptor, FieldDesc, Int32Descriptor, Int64Descriptor, ListDescriptor, MapDescriptor, RefDescriptor, StringDescriptor, Uint8Descriptor} from "../hbuf/descriptor";
 
 export type BufferType = ArrayBuffer | Blob
@@ -57,7 +57,8 @@ export class Result extends Error {
     }
 
     descriptors(): Descriptor {
-        return NewResultDesc(this.desc ?? this.data?.descriptors())
+        const dataDesc = this.desc ?? (isHData(this.data) ? this.data.descriptors() : undefined)
+        return NewResultDesc(dataDesc)
     }
 }
 
@@ -253,6 +254,8 @@ export class Server {
     }
 
     public async response(path: string, req: ArrayBuffer | Uint8Array | Record<string, any>): Promise<ResponseType> {
+        // path 归一化：与 register 的 "/name/method" 键一致（兼容无前导斜杠的传输层路径）
+        path = "/" + path.replace(/^\/+|\/+$/g, "")
         const method = this.methods[path]
         if (!method) {
             throw new Error(-1, "Method not found")

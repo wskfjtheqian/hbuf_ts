@@ -234,7 +234,7 @@ class SignedLong extends IntBase {
     }
 
     toJson(v: any): JsonValue {
-        return v?.toString()
+        return v == null ? null : v.toString()
     }
 
     constructor(isPtr: boolean) {
@@ -320,7 +320,7 @@ class UnsignedLong extends IntBase {
     }
 
     toJson(v: any): JsonValue {
-        return v?.toString()
+        return v == null ? null : v.toString()
     }
 
     constructor(isPtr: boolean) {
@@ -430,7 +430,7 @@ abstract class FloatBase implements Descriptor {
     }
 
     toJson(v: any): JsonValue {
-        return v == null ? undefined : this.isDouble ? v : Math.fround(v)
+        return v == null ? null : this.isDouble ? v : Math.fround(v)
     }
 
     abstract zero(): any
@@ -820,7 +820,7 @@ export class TimeDescriptor implements Descriptor {
     }
 
     toJson(v: any): JsonValue {
-        return v == null ? undefined : String((v as Date).getTime())
+        return v == null ? null : String((v as Date).getTime())
     }
 
     public zero(): any {
@@ -892,7 +892,7 @@ export class DecimalDescriptor implements Descriptor {
     }
 
     toJson(v: any): JsonValue {
-        return v == null ? undefined : DecimalToStr(v)
+        return v == null ? null : DecimalToStr(v)
     }
 
     public zero(): any {

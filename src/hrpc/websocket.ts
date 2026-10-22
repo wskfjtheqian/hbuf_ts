@@ -1,6 +1,6 @@
 import {HData, isHData} from "../hbuf/data";
 import {DataDescriptor, Descriptor, FieldDesc, Int32Descriptor, Int64Descriptor, ListDescriptor, MapDescriptor, RefDescriptor, StringDescriptor, Uint8Descriptor} from "../hbuf/descriptor";
-import {Decoder, Encoder, JsonDescriptor, NewJsonDecoder, NewJsonEncode, Option, RequestType, ResponseType, Server} from "./rpc";
+import {Decoder, Encoder, JsonDescriptor, NewJsonDecoder, NewJsonEncode, NewResultDesc, Option, RequestType, ResponseType, Result, Server} from "./rpc";
 
 
 export enum RpcType {
@@ -114,18 +114,23 @@ export class WebSocketClient {
         const body = this.encode(data)
 
         const promise = new Promise<WebSocketData>((resolve, reject) => {
+            let timer: NodeJS.Timeout | undefined
             const p = new FetchPromise((value) => {
                 if (this.requestMap.delete(data.id!)) {
+                    clearTimeout(timer)
                     resolve(value)
                 }
             }, (e) => {
                 if (this.requestMap.delete(data.id!)) {
+                    clearTimeout(timer)
                     reject(e)
                 }
             })
             if (!notification) {
-                setTimeout(() => {
-                    reject("timeout")
+                timer = setTimeout(() => {
+                    if (this.requestMap.delete(data.id!)) {
+                        reject("timeout")
+                    }
                 }, this.readTimeout)
                 this.requestMap.set(data.id!, p)
             }
@@ -136,8 +141,8 @@ export class WebSocketClient {
         }
         data = await promise
         if (desc) {
-            // 信封 data 经 JSON 透传解码为普通对象，再按响应描述符还原
-            return desc.fromJson(data.data as Record<string, any>)
+            // 响应信封 data 为 Result JSON（code/msg/data），按结果描述符解包
+            return NewResultDesc(desc).fromJson(data.data as Record<string, any>)
         }
         return data.data
     }
@@ -217,7 +222,9 @@ export class WebSocketClient {
             if (resp instanceof Blob) {
                 resp = await resp.arrayBuffer()
             }
-            data.data = resp
+            data.status = 200
+            // 与 HTTP 传输一致：响应包装为 Result（code/msg/data）
+            data.data = resp instanceof ArrayBuffer ? resp : new Result(0, "ok", resp as HData)
         } else {
             data.status = 404
         }
