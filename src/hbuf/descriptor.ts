@@ -856,7 +856,7 @@ export class TimeDescriptor implements Descriptor {
             }
         }
         // 与 zero()/decode 一致：零时间恒用 null 表示（无论是否可空）
-        return this.isPtr ? null : this.factory()
+        return null
     }
 
     toJson(v: any): JsonValue {

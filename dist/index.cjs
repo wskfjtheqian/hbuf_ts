@@ -1062,7 +1062,7 @@ var TimeDescriptor = class {
         return new Date(Number(json));
       }
     }
-    return this.isPtr ? null : this.factory();
+    return null;
   }
   toJson(v) {
     return v == null ? null : String(v.getTime());
