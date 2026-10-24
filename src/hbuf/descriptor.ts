@@ -860,7 +860,7 @@ export class TimeDescriptor implements Descriptor {
     }
 
     public toJson(v: any): JsonValue {
-        return v == null ? null : String((v as Date).getTime())
+        return v == null ? null : (v as Date).getTime()
     }
 
     public zero(): any {

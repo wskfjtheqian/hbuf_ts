@@ -3231,7 +3231,7 @@ var hbuf = (() => {
       return null;
     }
     toJson(v) {
-      return v == null ? null : String(v.getTime());
+      return v == null ? null : v.getTime();
     }
     zero() {
       return null;
