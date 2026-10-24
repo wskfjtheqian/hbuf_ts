@@ -159,7 +159,7 @@ export type {
 } from "./hbuf/data";
 
 export type {
-    Descriptor as HBufDescriptor,
+    Descriptor,
     FieldDesc,
 } from "./hbuf/descriptor";
 

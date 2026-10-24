@@ -65,6 +65,12 @@ test("HTTP RPC: HBufTestTs 128 字段作为参数与返回值（JSON codec）", 
     const res = await client.invoke<HBufTestTs>(1, "service", "method", src, hbTestDesc)
     deepEq(res, echoExpect(src))
 
+    const text = JSON.stringify((res as HData).descriptors().toJson(res))
+    console.info(text)
+    const jsonRes = new HBufTestTs().descriptors().fromJson(JSON.parse(text))
+    deepEq(jsonRes, echoExpect(src))
+
+
     await new Promise<void>((resolve) => {
         httpServer.close(() => resolve())
         httpServer.closeAllConnections()

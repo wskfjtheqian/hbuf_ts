@@ -56,6 +56,8 @@ function TimeToDate(secs: bigint, nsec: number): Date {
  * Descriptor 描述一个 HBuf 值的编解码方式（对应 Go 版 Descriptor，无 unsafe 偏移）。
  */
 export interface Descriptor {
+    factory(): any
+
     /** 元素缺失时的零值（List 元素 / Map Key/Value 的空标记场景）。 */
     zero(): any
 
@@ -84,6 +86,8 @@ export interface Descriptor {
 abstract class IntBase implements Descriptor {
     protected constructor(protected isPtr = false) {
     }
+
+    public abstract factory(): any
 
     abstract fromJson(json: JsonValue): any
 
@@ -181,13 +185,17 @@ abstract class IntBase implements Descriptor {
 }
 
 class SignedInt extends IntBase {
+    public factory(): any {
+        return 0
+    }
+
     fromJson(json: JsonValue) {
         if (json !== null) {
             if (typeof json === 'number' || typeof json === 'string') {
                 return Number(json)
             }
         }
-        return this.isPtr ? null : 0
+        return this.isPtr ? null : this.factory()
     }
 
     toJson(v: any): JsonValue {
@@ -224,13 +232,17 @@ class SignedInt extends IntBase {
 }
 
 class SignedLong extends IntBase {
+    public factory(): any {
+        return 0n
+    }
+
     fromJson(json: JsonValue) {
         if (json !== null) {
             if (typeof json === 'number' || typeof json === 'string') {
                 return BigInt(json)
             }
         }
-        return this.isPtr ? null : 0n
+        return this.isPtr ? null : this.factory()
     }
 
     toJson(v: any): JsonValue {
@@ -267,13 +279,17 @@ class SignedLong extends IntBase {
 }
 
 class UnsignedInt extends IntBase {
+    public factory(): any {
+        return 0
+    }
+
     fromJson(json: JsonValue) {
         if (json !== null) {
             if (typeof json === 'number' || typeof json === 'string') {
                 return Number(json)
             }
         }
-        return this.isPtr ? null : 0
+        return this.isPtr ? null : this.factory()
     }
 
     toJson(v: any): JsonValue {
@@ -310,13 +326,17 @@ class UnsignedInt extends IntBase {
 }
 
 class UnsignedLong extends IntBase {
+    public factory(): any {
+        return 0n
+    }
+
     fromJson(json: JsonValue) {
         if (json !== null) {
             if (typeof json === 'number' || typeof json === 'string') {
                 return BigInt(json)
             }
         }
-        return this.isPtr ? null : 0n
+        return this.isPtr ? null : this.factory()
     }
 
     toJson(v: any): JsonValue {
@@ -420,13 +440,17 @@ abstract class FloatBase implements Descriptor {
     protected constructor(protected isPtr = false, private isDouble: boolean) {
     }
 
+    factory(): any {
+        return 0
+    }
+
     fromJson(json: JsonValue) {
         if (json !== null) {
             if (typeof json === 'number' || typeof json === 'string') {
                 return Number(json)
             }
         }
-        return this.isPtr ? null : 0
+        return this.isPtr ? null : this.factory()
     }
 
     toJson(v: any): JsonValue {
@@ -544,13 +568,17 @@ export class BoolDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
+    factory(): boolean {
+        return false
+    }
+
     fromJson(json: JsonValue) {
         if (json !== null) {
             if (typeof json === 'boolean' || typeof json === 'string') {
                 return Boolean(json)
             }
         }
-        return this.isPtr ? null : false
+        return this.isPtr ? null : this.factory()
     }
 
     toJson(v: any): JsonValue {
@@ -628,13 +656,17 @@ export class StringDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
+    factory(): string {
+        return ""
+    }
+
     fromJson(json: JsonValue) {
         if (json !== null) {
             if (typeof json === 'string' || typeof json === 'number' || typeof json === 'boolean') {
                 return String(json)
             }
         }
-        return this.isPtr ? null : ""
+        return this.isPtr ? null : this.factory()
     }
 
     toJson(v: any): JsonValue {
@@ -720,6 +752,10 @@ export class StringDescriptor implements Descriptor {
 /** Bytes：任意字节序列。 */
 export class BytesDescriptor implements Descriptor {
     constructor(private isPtr = false) {
+    }
+
+    factory(): ArrayBuffer {
+        return new ArrayBuffer(0)
     }
 
     fromJson(json: JsonValue) {
@@ -809,6 +845,10 @@ export class TimeDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
+    factory(): Date {
+        return new Date(0)
+    }
+
     fromJson(json: JsonValue) {
         if (json != null) {
             if (typeof json === "number" || typeof json === "string") {
@@ -816,7 +856,7 @@ export class TimeDescriptor implements Descriptor {
             }
         }
         // 与 zero()/decode 一致：零时间恒用 null 表示（无论是否可空）
-        return null
+        return this.isPtr ? null : this.factory()
     }
 
     toJson(v: any): JsonValue {
@@ -882,13 +922,17 @@ export class DecimalDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
+    factory(): any {
+        return new Decimal(0)
+    }
+
     fromJson(json: JsonValue) {
         if (json != null) {
             if (typeof json === "string" || typeof json === "number") {
                 return new Decimal(json)
             }
         }
-        return this.isPtr ? null : new Decimal(0)
+        return this.isPtr ? null : this.factory()
     }
 
     toJson(v: any): JsonValue {
@@ -976,6 +1020,10 @@ export class ListDescriptor implements Descriptor {
     constructor(private desc: Descriptor, private isPtr = false) {
     }
 
+    factory(): any {
+        return []
+    }
+
     fromJson(json: JsonValue) {
         if (Array.isArray(json)) {
             const list: any[] = []
@@ -984,7 +1032,7 @@ export class ListDescriptor implements Descriptor {
             }
             return list
         }
-        return this.isPtr ? null : []
+        return this.isPtr ? null : this.factory()
     }
 
     toJson(v: any): JsonValue {
@@ -1065,6 +1113,10 @@ export class MapDescriptor implements Descriptor {
     constructor(private keyDesc: Descriptor, private valueDesc: Descriptor, private isPtr = false) {
     }
 
+    factory(): any {
+        return new Map()
+    }
+
     fromJson(json: JsonValue): any {
         if (json != null) {
             const _json = json as Record<string, JsonValue>
@@ -1074,7 +1126,7 @@ export class MapDescriptor implements Descriptor {
             }
             return map
         }
-        return this.isPtr ? null : new Map()
+        return this.isPtr ? null : this.factory()
     }
 
     toJson(val: any): JsonValue {
@@ -1326,6 +1378,10 @@ export class RefDescriptor implements Descriptor {
     constructor(private desc: Descriptor, private isPtr = false) {
     }
 
+    factory(): any {
+        return this.desc.factory()
+    }
+
     toJson(v: any): JsonValue {
         if (v == null) {
             return null
@@ -1381,6 +1437,10 @@ export class SyncDescriptor implements Descriptor {
     private cached?: Descriptor
 
     constructor(private f: () => Descriptor) {
+    }
+
+    factory(): any {
+        return this.Desc().factory()
     }
 
     toJson(v: any): JsonValue {

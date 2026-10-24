@@ -180,7 +180,7 @@ export class HBufTestTs implements HData {
     v127: Map<string, HBufSubTestTs> = new Map()
     v128: Map<string, HBufSubTestTs | null> = new Map()
 
-    descriptors(): Descriptor {
+    public descriptors(): Descriptor {
         return hbTestDesc
     }
 }

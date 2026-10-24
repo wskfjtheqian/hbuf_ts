@@ -1,5 +1,16 @@
 import {HBufError, HData, isHData, JsonValue, Marshal, Reader, Type, Unmarshal, Writer} from "../hbuf/data";
-import {DataDescriptor, Descriptor, FieldDesc, Int32Descriptor, Int64Descriptor, ListDescriptor, MapDescriptor, RefDescriptor, StringDescriptor, Uint8Descriptor} from "../hbuf/descriptor";
+import {
+    DataDescriptor,
+    Descriptor,
+    FieldDesc,
+    Int32Descriptor,
+    Int64Descriptor,
+    ListDescriptor,
+    MapDescriptor,
+    RefDescriptor,
+    StringDescriptor,
+    Uint8Descriptor
+} from "../hbuf/descriptor";
 
 export type BufferType = ArrayBuffer | Blob
 export type RequestType = BufferType | HData | undefined
@@ -65,22 +76,47 @@ export class Result extends Error {
 const errorDesc: DataDescriptor = new DataDescriptor(
     () => new Error(0, ""),
     new Map<number, FieldDesc>([
-        [1, {name: "code", desc: new Int32Descriptor(), get: (o: Error) => o.code, set: (o: Error, v: number) => o.code = v}],
-        [2, {name: "msg", desc: new StringDescriptor(), get: (o: Error) => o.msg, set: (o: Error, v: string) => o.msg = v}],
+        [1, {
+            name: "code",
+            desc: new Int32Descriptor(),
+            get: (o: Error) => o.code,
+            set: (o: Error, v: number) => o.code = v
+        }],
+        [2, {
+            name: "msg",
+            desc: new StringDescriptor(),
+            get: (o: Error) => o.msg,
+            set: (o: Error, v: string) => o.msg = v
+        }],
     ]),
 )
 
-/**
+/**111
  * NewResultDesc 构造 Result 的描述符：code/msg 与可选的 data 负载。
  * dataDesc 缺失时（无负载的错误结果）不包含 data 字段。
  */
 export function NewResultDesc(dataDesc?: Descriptor): DataDescriptor {
     const fields = new Map<number, FieldDesc>([
-        [1, {name: "code", desc: new Int32Descriptor(), get: (o: Result) => o.code, set: (o: Result, v: number) => o.code = v}],
-        [2, {name: "msg", desc: new StringDescriptor(), get: (o: Result) => o.msg, set: (o: Result, v: string) => o.msg = v}],
+        [1, {
+            name: "code",
+            desc: new Int32Descriptor(),
+            get: (o: Result) => o.code,
+            set: (o: Result, v: number) => o.code = v
+        }],
+        [2, {
+            name: "msg",
+            desc: new StringDescriptor(),
+            get: (o: Result) => o.msg,
+            set: (o: Result, v: string) => o.msg = v
+        }],
     ])
     if (dataDesc) {
-        fields.set(3, {name: "data", desc: new RefDescriptor(dataDesc, true), get: (o: Result) => o.data, set: (o: Result, v: any) => o.data = v})
+        fields.set(3, {
+            name: "data",
+            desc: new RefDescriptor(dataDesc, true),
+            get: (o: Result) => o.data,
+            set: (o: Result, v: any) => o.data = v
+        })
     }
     return new DataDescriptor(
         () => new Result(0, ""),
@@ -94,6 +130,10 @@ export function NewResultDesc(dataDesc?: Descriptor): DataDescriptor {
  */
 export class JsonDescriptor implements Descriptor {
     constructor(private isPtr = false) {
+    }
+
+    factory(): any {
+        return null
     }
 
     fromJson(json: JsonValue): any {

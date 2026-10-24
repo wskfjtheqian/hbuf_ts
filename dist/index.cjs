@@ -1,7 +1,9 @@
 "use strict";
+var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -15,6 +17,14 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/index.ts
@@ -23,7 +33,6 @@ __export(index_exports, {
   BoolDescriptor: () => BoolDescriptor,
   BytesDescriptor: () => BytesDescriptor,
   Client: () => Client,
-  Data: () => Data,
   DataDescriptor: () => DataDescriptor,
   DecimalDescriptor: () => DecimalDescriptor,
   DoubleDescriptor: () => DoubleDescriptor,
@@ -39,30 +48,10 @@ __export(index_exports, {
   ListDescriptor: () => ListDescriptor,
   MapDescriptor: () => MapDescriptor,
   Marshal: () => Marshal,
-  NewBoolDescriptor: () => NewBoolDescriptor,
-  NewBytesDescriptor: () => NewBytesDescriptor,
-  NewDataDescriptor: () => NewDataDescriptor,
-  NewDecimalDescriptor: () => NewDecimalDescriptor,
-  NewDoubleDescriptor: () => NewDoubleDescriptor,
-  NewFloatDescriptor: () => NewFloatDescriptor,
   NewHBufDecoder: () => NewHBufDecoder,
   NewHBufEncode: () => NewHBufEncode,
-  NewInt16Descriptor: () => NewInt16Descriptor,
-  NewInt32Descriptor: () => NewInt32Descriptor,
-  NewInt64Descriptor: () => NewInt64Descriptor,
-  NewInt8Descriptor: () => NewInt8Descriptor,
   NewJsonDecoder: () => NewJsonDecoder,
   NewJsonEncode: () => NewJsonEncode,
-  NewListDescriptor: () => NewListDescriptor,
-  NewMapDescriptor: () => NewMapDescriptor,
-  NewRefDescriptor: () => NewRefDescriptor,
-  NewStringDescriptor: () => NewStringDescriptor,
-  NewSyncDescriptor: () => NewSyncDescriptor,
-  NewTimeDescriptor: () => NewTimeDescriptor,
-  NewUint16Descriptor: () => NewUint16Descriptor,
-  NewUint32Descriptor: () => NewUint32Descriptor,
-  NewUint64Descriptor: () => NewUint64Descriptor,
-  NewUint8Descriptor: () => NewUint8Descriptor,
   Reader: () => Reader2,
   RecordEntry: () => RecordEntry,
   RefDescriptor: () => RefDescriptor,
@@ -206,16 +195,16 @@ function SkipDataBody(reader, valueLen) {
 }
 
 // src/hbuf/data.ts
-var Type = /* @__PURE__ */ ((Type2) => {
-  Type2[Type2["TInt"] = 0] = "TInt";
-  Type2[Type2["TUint"] = 1] = "TUint";
-  Type2[Type2["TFloat"] = 2] = "TFloat";
-  Type2[Type2["TBool"] = 3] = "TBool";
-  Type2[Type2["TBytes"] = 4] = "TBytes";
-  Type2[Type2["TList"] = 5] = "TList";
-  Type2[Type2["TMap"] = 6] = "TMap";
-  Type2[Type2["TData"] = 7] = "TData";
-  return Type2;
+var Type = /* @__PURE__ */ ((Type3) => {
+  Type3[Type3["TInt"] = 0] = "TInt";
+  Type3[Type3["TUint"] = 1] = "TUint";
+  Type3[Type3["TFloat"] = 2] = "TFloat";
+  Type3[Type3["TBool"] = 3] = "TBool";
+  Type3[Type3["TBytes"] = 4] = "TBytes";
+  Type3[Type3["TList"] = 5] = "TList";
+  Type3[Type3["TMap"] = 6] = "TMap";
+  Type3[Type3["TData"] = 7] = "TData";
+  return Type3;
 })(Type || {});
 var HBufError = class extends Error {
   constructor(msg) {
@@ -294,492 +283,18 @@ function Marshal(data) {
   data.descriptors().encode(buf, data, void 0);
   return buf.toUint8Array();
 }
-function Unmarshal(buf, data) {
+function Unmarshal(buf, data, desc) {
   if (buf.length === 0) {
     return;
   }
   const reader = new Reader2(buf);
   const { typ, valueLen } = DecodeType(reader);
-  data.descriptors().decode(reader, typ, true, valueLen, data);
+  const d = desc ?? data.descriptors();
+  d.decode(reader, typ, true, valueLen, data);
 }
-var Data = class {
-};
 function isHData(obj) {
   return obj && typeof obj.descriptors === "function";
 }
-
-// src/hrpc/rpc.ts
-var Error2 = class extends Data {
-  constructor(code, msg) {
-    super();
-    this.code = code;
-    this.msg = msg;
-  }
-  toMap() {
-    return this;
-  }
-};
-var Result = class _Result extends Error2 {
-  constructor(code, msg, data, from) {
-    super(code, msg);
-    this.data = data;
-    this.from = from;
-  }
-  toMap() {
-    return {
-      ...super.toMap(),
-      data: this.data?.toMap()
-    };
-  }
-  fromMap(map) {
-    return new _Result(
-      map.code,
-      map.msg,
-      map.data && this.from?.call(this, map.data)
-    );
-  }
-};
-function NewJsonDecoder() {
-  const decoder = new TextDecoder("utf-8");
-  return (buffer, from) => {
-    const str = decoder.decode(buffer);
-    return from(JSON.parse(str));
-  };
-}
-function NewJsonEncode() {
-  const encoder = new TextEncoder();
-  return (v) => {
-    const str = JSON.stringify(v.toMap());
-    return encoder.encode(str).buffer;
-  };
-}
-function NewHBufEncode() {
-  return (v) => {
-    return Marshal(v).slice().buffer;
-  };
-}
-function NewHBufDecoder() {
-  return (buffer, from) => {
-    const data = from({});
-    Unmarshal(new Uint8Array(buffer), data);
-    return data;
-  };
-}
-var Client = class {
-  constructor(request, option) {
-    this.request = request;
-    this.middleware = (next) => {
-      for (let i = (option?.middleware?.length ?? 0) - 1; i >= 0; i--) {
-        next = option.middleware[i](next);
-      }
-      return next;
-    };
-  }
-  invoke(id, name, method, request, from) {
-    name = name.replace(/^\/+|\/+$/g, "") + "/";
-    return this.middleware(async (req, opt) => {
-      const result = new Result(0, "ok", void 0, from);
-      const resp = await this.request(name + method, from == null, req, from && result.fromMap.bind(result), opt);
-      if (from) {
-        if (resp.code !== 0) {
-          throw resp;
-        }
-        return resp.data;
-      }
-      return resp;
-    })(request, { method, headers: new Headers() });
-  }
-};
-var Server = class {
-  constructor(option) {
-    this.decode = option?.decode ?? NewJsonDecoder();
-    this.encode = option?.encode ?? NewJsonEncode();
-    this.methods = {};
-    this.middleware = (next) => {
-      for (let i = (option?.middleware?.length ?? 0) - 1; i >= 0; i--) {
-        next = option.middleware[i](next);
-      }
-      return next;
-    };
-  }
-  register(id, name, methods) {
-    name = "/" + name.replace(/^\/+|\/+$/g, "") + "/";
-    for (const method of methods) {
-      const key = method.name.replace(/|\/+$/g, "");
-      this.methods[name + key] = method;
-    }
-  }
-  unRegister(id, name) {
-    name = "/" + name.replace(/^\/+|\/+$/g, "") + "/";
-    for (const key in this.methods) {
-      if (key.startsWith(name)) {
-        delete this.methods[key];
-      }
-    }
-  }
-  async response(path, req) {
-    const method = this.methods[path];
-    if (!method) {
-      throw new Error2(-1, "Method not found");
-    }
-    const val = !method.from ? req : method.from(req);
-    return await this.middleware(method.handler)(val);
-  }
-};
-
-// src/utils/tools.ts
-async function waiting(time) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => resolve(), Math.max(time, 0));
-  });
-}
-function convertArray(list, call) {
-  if (null == list) {
-    return null;
-  }
-  let ret = new Array(list.length);
-  for (const key in list) {
-    ret[key] = call(list[key]);
-  }
-  return ret;
-}
-var RecordEntry = class {
-  get val() {
-    return this._val;
-  }
-  get key() {
-    return this._key;
-  }
-  constructor(key, val) {
-    this._key = key;
-    this._val = val;
-  }
-};
-function convertRecord(record, call) {
-  if (null == record) {
-    return null;
-  }
-  let ret = {};
-  for (const key in record) {
-    let val = call(key, record[key]);
-    ret[val.key] = val.val;
-  }
-  return ret;
-}
-function isRecord(o) {
-  return Object.getPrototypeOf({}) === Object.getPrototypeOf(o);
-}
-function isArray(o) {
-  return Object.getPrototypeOf([]) === Object.getPrototypeOf(o);
-}
-function formatDate(date, format) {
-  if (!format) format = "YYYY-MM-DD";
-  switch (typeof date) {
-    case "string":
-      date = new Date(date.replace(/-/g, "/"));
-      break;
-    case "number":
-      date = new Date(date);
-      break;
-  }
-  if (date instanceof Date) {
-    const dict = {
-      YYYY: date.getFullYear(),
-      M: date.getMonth() + 1,
-      D: date.getDate(),
-      H: date.getHours(),
-      m: date.getMinutes(),
-      s: date.getSeconds(),
-      S: date.getMilliseconds(),
-      MM: ("" + (date.getMonth() + 101)).substring(1),
-      DD: ("" + (date.getDate() + 100)).substring(1),
-      HH: ("" + (date.getHours() + 100)).substring(1),
-      mm: ("" + (date.getMinutes() + 100)).substring(1),
-      ss: ("" + (date.getSeconds() + 100)).substring(1),
-      SS: ("" + (date.getMilliseconds() + 100)).substring(1)
-    };
-    return format.replace(/(YYYY|MM?|DD?|HH?|ss?|mm?|SS?)/g, function() {
-      return dict[arguments[0]];
-    });
-  }
-  return "" + date;
-}
-function isData(obj) {
-  return obj && typeof obj.toMap === "function";
-}
-var BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-function traceId() {
-  const milli = BigInt(Date.now());
-  const randBuf = new Uint8Array(9);
-  window.crypto.getRandomValues(randBuf);
-  let random65 = 0n;
-  for (let i = 0; i < 9; i++) {
-    random65 = random65 << 8n | BigInt(randBuf[i]);
-  }
-  random65 = random65 & (1n << 65n) - 1n;
-  let num = milli << 65n | random65;
-  const result = new Array(18);
-  const target = 62n;
-  for (let i = 17; i >= 0; i--) {
-    const rem = num % target;
-    num = num / target;
-    result[i] = BASE62_CHARS[Number(rem)];
-  }
-  return result.join("");
-}
-
-// src/hrpc/http.ts
-var HttpClient = class {
-  constructor(base, option) {
-    this.base = base.replace(/^\/+|\/+$/g, "") + "/";
-    this.decode = option?.decode ?? NewJsonDecoder();
-    this.encode = option?.encode ?? NewJsonEncode();
-  }
-  async request(path, notification, req, from, opt) {
-    const body = isData(req) ? this.encode(req) : req;
-    const resp = await this.fetch(path, body, opt);
-    if (from) {
-      return this.decode(resp instanceof Blob ? await resp.arrayBuffer() : resp, from);
-    } else {
-      return resp;
-    }
-  }
-  async fetch(path, body, opt) {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", this.base + path);
-    xhr.setRequestHeader("Content-Type", "application/octet-stream");
-    xhr.setRequestHeader("X-Trace-Id", opt?.traceId ?? traceId());
-    xhr.send(body);
-    return new Promise((resolve, reject) => {
-      xhr.onload = () => {
-        if (xhr.status === 200) {
-          resolve(xhr.response);
-        } else {
-          reject(new Error(`HTTP Error: ${xhr.status} ${xhr.statusText}`));
-        }
-      };
-      xhr.onerror = () => {
-        reject(new Error("Network Error"));
-      };
-    });
-  }
-};
-var FetchClient = class {
-  constructor(base, option) {
-    this.base = base.replace(/^\/+|\/+$/g, "") + "/";
-    this.decode = option?.decode ?? NewJsonDecoder();
-    this.encode = option?.encode ?? NewJsonEncode();
-  }
-  async request(path, notification, req, from, opt) {
-    const body = isData(req) ? this.encode(req) : req;
-    const resp = await this.fetch(path, body, opt);
-    if (from) {
-      return this.decode(resp instanceof Blob ? await resp.arrayBuffer() : resp, from);
-    } else {
-      return resp;
-    }
-  }
-  async fetch(path, body, opt) {
-    const headers = opt?.headers ?? new Headers();
-    headers.append("X-Trace-Id", opt?.traceId ?? traceId());
-    const res = await fetch(this.base + path, {
-      method: "POST",
-      body,
-      headers
-    });
-    if (res.ok) {
-      return res.arrayBuffer();
-    } else {
-      throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
-    }
-  }
-};
-
-// src/hrpc/websocket.ts
-var WebSocketData = class _WebSocketData {
-  constructor(type, id, path, data) {
-    this.type = type;
-    this.id = id;
-    this.path = path;
-  }
-  toMap() {
-    return {
-      type: this.type,
-      header: this.header,
-      id: this.id?.toString(),
-      path: this.path,
-      status: this.status,
-      data: this.data
-    };
-  }
-  static fromMap(map) {
-    const ret = new _WebSocketData(
-      map.type,
-      map.id === void 0 ? void 0 : BigInt(map.id),
-      map.path
-    );
-    ret.header = map.header;
-    ret.status = map.status;
-    ret.data = map.data;
-    return ret;
-  }
-};
-var FetchPromise = class {
-  constructor(resolve, reject) {
-    this.resolve = resolve;
-    this.reject = reject;
-  }
-};
-var WebSocketClient = class {
-  constructor(baseUrl, server, option) {
-    this.requestId = 0n;
-    this.requestMap = /* @__PURE__ */ new Map();
-    this.readTimeout = 3e4;
-    this.heartbeat = 3e4;
-    this.interval = null;
-    this.headTimeout = false;
-    this.baseUrl = baseUrl;
-    this.server = server;
-    this.readTimeout = option?.readTimeout ?? 3e4;
-    this.heartbeat = option?.heartbeat ?? 3e4;
-    this.decode = option?.decode ?? NewJsonDecoder();
-    this.encode = option?.encode ?? NewJsonEncode();
-  }
-  async request(path, notification, req, from, opt) {
-    this.requestId++;
-    let data = new WebSocketData(
-      notification ? 2 /* Notification */ : 0 /* Request */,
-      this.requestId,
-      path
-    );
-    if (opt?.headers) {
-      data.header = {};
-      opt.headers.forEach((value, key, parent) => {
-        data.header[key] = (data.header[key] || []).concat(value);
-      });
-    }
-    if (req instanceof Blob) {
-      req = await req.arrayBuffer();
-    }
-    data.data = req;
-    const body = this.encode(data);
-    const promise = new Promise((resolve, reject) => {
-      let promise2 = new FetchPromise((value) => {
-        if (this.requestMap.delete(data.id)) {
-          resolve(value);
-        }
-      }, (e) => {
-        if (this.requestMap.delete(data.id)) {
-          reject(e);
-        }
-      });
-      if (!notification) {
-        setTimeout(() => {
-          reject("timeout");
-        }, this.readTimeout);
-        this.requestMap.set(data.id, promise2);
-      }
-    });
-    this.socket?.send(body);
-    if (notification) {
-      return;
-    }
-    data = await promise;
-    if (from) {
-      return from(data.data);
-    }
-    return data.data;
-  }
-  connect(protocols) {
-    let url = this.baseUrl;
-    return new Promise((resolve, r) => {
-      let reject = r;
-      clearInterval(this.interval ?? 0);
-      try {
-        this.socket = new WebSocket(url, protocols);
-        this.socket.onclose = (event) => {
-          clearInterval(this.interval ?? 0);
-          this.onclose?.call(this, event.reason);
-        };
-        this.socket.onerror = (event) => {
-          reject?.call(this, event);
-          reject = null;
-        };
-        this.socket.onmessage = async (event) => {
-          try {
-            let data = event.data instanceof Blob ? await event.data.arrayBuffer() : event.data;
-            await this.onMessage(data);
-          } catch (e) {
-            if (e != "Method not found") {
-              console.log(e);
-            }
-          }
-        };
-        this.socket.onopen = (event) => {
-          this.interval = setInterval(() => this.onHeartbeat(), this.heartbeat);
-          resolve();
-        };
-      } catch (e) {
-        reject?.call(this, e);
-        reject = null;
-      }
-    });
-  }
-  close() {
-    clearInterval(this.interval ?? 0);
-    this.socket?.close();
-  }
-  async onMessage(buffer) {
-    this.headTimeout = false;
-    const response = this.decode(buffer, WebSocketData.fromMap);
-    if (response.type == 1 /* Response */) {
-      if (response.status == 200) {
-        this.requestMap.get(response.id)?.resolve(response);
-      } else {
-        this.requestMap.get(response.id)?.reject(`Error: ${response.status}`);
-      }
-    } else if (response.type == 3 /* Ping */) {
-      const data = new WebSocketData(4 /* Pong */);
-      this.socket?.send(this.encode(data));
-    } else if (response.type == 0 /* Request */ || response.type == 2 /* Notification */) {
-      await this.onRequest(response, response.type == 2 /* Notification */);
-    }
-  }
-  async onRequest(request, broadcast) {
-    if (broadcast) {
-      this.server?.response(request.path, request.data);
-      return;
-    }
-    let data = new WebSocketData(
-      1 /* Response */,
-      request.id,
-      request.path
-    );
-    if (this.server) {
-      let resp = await this.server?.response(request.path, request.data);
-      if (resp instanceof Blob) {
-        resp = await resp.arrayBuffer();
-      }
-      data.data = resp;
-    } else {
-      data.status = 404;
-    }
-    this.socket?.send(this.encode(data));
-  }
-  onHeartbeat() {
-    if (this.socket?.OPEN) {
-      if (this.headTimeout) {
-        this.socket.close();
-        clearInterval(this.interval ?? 0);
-        this.onclose?.call(this, "timeout");
-        return;
-      }
-      const data = new WebSocketData(3 /* Ping */);
-      this.socket.send(this.encode(data));
-      this.headTimeout = true;
-    }
-  }
-};
 
 // src/hbuf/encoder.ts
 function WriterType(buf, typ, idLen, valueLen) {
@@ -862,6 +377,7 @@ function EncodeTime(buf, secs, nsec) {
 }
 
 // src/hbuf/descriptor.ts
+var import_decimal = __toESM(require("decimal.js"), 1);
 var utf8Encoder = new TextEncoder();
 var utf8Decoder = new TextDecoder("utf-8");
 function utf8Encode(str) {
@@ -981,6 +497,20 @@ var SignedInt = class extends IntBase {
     super(isPtr);
     this.bits = bits;
   }
+  factory() {
+    return 0;
+  }
+  fromJson(json) {
+    if (json !== null) {
+      if (typeof json === "number" || typeof json === "string") {
+        return Number(json);
+      }
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(v) {
+    return v;
+  }
   zero() {
     return this.isPtr ? null : 0;
   }
@@ -1001,6 +531,20 @@ var SignedInt = class extends IntBase {
   }
 };
 var SignedLong = class extends IntBase {
+  factory() {
+    return 0n;
+  }
+  fromJson(json) {
+    if (json !== null) {
+      if (typeof json === "number" || typeof json === "string") {
+        return BigInt(json);
+      }
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(v) {
+    return v == null ? null : v.toString();
+  }
   constructor(isPtr) {
     super(isPtr);
   }
@@ -1028,6 +572,20 @@ var UnsignedInt = class extends IntBase {
     super(isPtr);
     this.bits = bits;
   }
+  factory() {
+    return 0;
+  }
+  fromJson(json) {
+    if (json !== null) {
+      if (typeof json === "number" || typeof json === "string") {
+        return Number(json);
+      }
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(v) {
+    return v;
+  }
   zero() {
     return this.isPtr ? null : 0;
   }
@@ -1048,6 +606,20 @@ var UnsignedInt = class extends IntBase {
   }
 };
 var UnsignedLong = class extends IntBase {
+  factory() {
+    return 0n;
+  }
+  fromJson(json) {
+    if (json !== null) {
+      if (typeof json === "number" || typeof json === "string") {
+        return BigInt(json);
+      }
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(v) {
+    return v == null ? null : v.toString();
+  }
   constructor(isPtr) {
     super(isPtr);
   }
@@ -1125,6 +697,20 @@ var FloatBase = class {
   constructor(isPtr = false, isDouble) {
     this.isPtr = isPtr;
     this.isDouble = isDouble;
+  }
+  factory() {
+    return 0;
+  }
+  fromJson(json) {
+    if (json !== null) {
+      if (typeof json === "number" || typeof json === "string") {
+        return Number(json);
+      }
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(v) {
+    return v == null ? null : this.isDouble ? v : Math.fround(v);
   }
   isEmptyField(v) {
     if (v == null) {
@@ -1220,6 +806,20 @@ var BoolDescriptor = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
   }
+  factory() {
+    return false;
+  }
+  fromJson(json) {
+    if (json !== null) {
+      if (typeof json === "boolean" || typeof json === "string") {
+        return Boolean(json);
+      }
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(v) {
+    return v;
+  }
   zero() {
     return this.isPtr ? null : false;
   }
@@ -1283,6 +883,20 @@ var BoolDescriptor = class {
 var StringDescriptor = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
+  }
+  factory() {
+    return "";
+  }
+  fromJson(json) {
+    if (json !== null) {
+      if (typeof json === "string" || typeof json === "number" || typeof json === "boolean") {
+        return String(json);
+      }
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(v) {
+    return v;
   }
   zero() {
     return this.isPtr ? null : "";
@@ -1358,6 +972,15 @@ var BytesDescriptor = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
   }
+  factory() {
+    return new ArrayBuffer(0);
+  }
+  fromJson(json) {
+    return json;
+  }
+  toJson(v) {
+    return v;
+  }
   zero() {
     return null;
   }
@@ -1430,6 +1053,20 @@ var TimeDescriptor = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
   }
+  factory() {
+    return /* @__PURE__ */ new Date(0);
+  }
+  fromJson(json) {
+    if (json != null) {
+      if (typeof json === "number" || typeof json === "string") {
+        return new Date(Number(json));
+      }
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(v) {
+    return v == null ? null : String(v.getTime());
+  }
   zero() {
     return null;
   }
@@ -1472,12 +1109,32 @@ var TimeDescriptor = class {
     return TimeToDate(secs, nsec);
   }
 };
+function DecimalToStr(v) {
+  if (v instanceof import_decimal.default) {
+    return v.toFixed(Math.max(0, v.decimalPlaces()));
+  }
+  return String(v);
+}
 var DecimalDescriptor = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
   }
+  factory() {
+    return new import_decimal.default(0);
+  }
+  fromJson(json) {
+    if (json != null) {
+      if (typeof json === "string" || typeof json === "number") {
+        return new import_decimal.default(json);
+      }
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(v) {
+    return v == null ? null : DecimalToStr(v);
+  }
   zero() {
-    return this.isPtr ? null : "0";
+    return this.isPtr ? null : new import_decimal.default(0);
   }
   isEmpty(v) {
     if (v == null) {
@@ -1490,7 +1147,7 @@ var DecimalDescriptor = class {
       if (this.isEmpty(v)) {
         return;
       }
-      const val = utf8Encode(v);
+      const val = utf8Encode(DecimalToStr(v));
       WriterType(buf, 4 /* TBytes */, LengthId(id), LengthUint(BigInt(val.length)));
       WriterId(buf, id);
       EncodeUint64(buf, BigInt(val.length));
@@ -1500,7 +1157,7 @@ var DecimalDescriptor = class {
         WriterType(buf, 4 /* TBytes */, 0, 1);
         return;
       }
-      const val = utf8Encode(v);
+      const val = utf8Encode(DecimalToStr(v));
       if (Number(v) === 0 || val.length === 0) {
         WriterType(buf, 4 /* TBytes */, 0, 1);
         return;
@@ -1514,30 +1171,30 @@ var DecimalDescriptor = class {
     let val;
     switch (typ) {
       case 3 /* TBool */:
-        val = valueLen === 2 ? "1" : "0";
+        val = valueLen === 2 ? new import_decimal.default(1) : new import_decimal.default(0);
         break;
       case 0 /* TInt */:
-        val = valRead ? DecodeInt64(r, valueLen).toString() : "0";
+        val = new import_decimal.default(valRead ? DecodeInt64(r, valueLen).toString() : "0");
         break;
       case 1 /* TUint */:
-        val = valRead ? DecodeUint64(r, valueLen).toString() : "0";
+        val = new import_decimal.default(valRead ? DecodeUint64(r, valueLen).toString() : "0");
         break;
       case 2 /* TFloat */: {
         if (!valRead) {
-          val = "0";
+          val = new import_decimal.default(0);
           break;
         }
         const bits = DecodeUint64(r, valueLen);
-        val = (valueLen <= 4 ? Float32FromBits(bits & 0xFFFFFFFFn) : Float64FromBits(bits)).toString();
+        val = new import_decimal.default((valueLen <= 4 ? Float32FromBits(bits & 0xFFFFFFFFn) : Float64FromBits(bits)).toString());
         break;
       }
       case 4 /* TBytes */: {
         if (!valRead) {
-          val = "0";
+          val = new import_decimal.default(0);
           break;
         }
         const size = DecodeUint64(r, valueLen);
-        val = utf8Decode(r.readBytes(Number(size)));
+        val = new import_decimal.default(utf8Decode(r.readBytes(Number(size))));
         break;
       }
       default:
@@ -1550,6 +1207,29 @@ var ListDescriptor = class {
   constructor(desc, isPtr = false) {
     this.desc = desc;
     this.isPtr = isPtr;
+  }
+  factory() {
+    return [];
+  }
+  fromJson(json) {
+    if (Array.isArray(json)) {
+      const list = [];
+      for (const item of json) {
+        list.push(this.desc.fromJson(item));
+      }
+      return list;
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(v) {
+    if (v == null) {
+      return null;
+    }
+    const list = [];
+    for (const item of v) {
+      list.push(this.desc.toJson(item));
+    }
+    return list;
   }
   zero() {
     return null;
@@ -1612,6 +1292,30 @@ var MapDescriptor = class {
     this.keyDesc = keyDesc;
     this.valueDesc = valueDesc;
     this.isPtr = isPtr;
+  }
+  factory() {
+    return /* @__PURE__ */ new Map();
+  }
+  fromJson(json) {
+    if (json != null) {
+      const _json = json;
+      const map = /* @__PURE__ */ new Map();
+      for (const [k, v] of Object.entries(_json)) {
+        map.set(this.keyDesc.fromJson(k), this.valueDesc.fromJson(v));
+      }
+      return map;
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(val) {
+    if (val == null) {
+      return null;
+    }
+    const map = {};
+    for (const [k, v] of val) {
+      map[String(this.keyDesc.toJson(k))] = this.valueDesc.toJson(v);
+    }
+    return map;
   }
   zero() {
     return null;
@@ -1677,6 +1381,27 @@ var DataDescriptor = class {
     this.fieldMap = fields;
     this.extends_ = Array.from(extends_, ([id, f]) => ({ ...f, id })).sort((a, b) => a.id - b.id);
     this.extendMap = extends_;
+  }
+  fromJson(json) {
+    if (json != null) {
+      const ret = this.factory();
+      for (const field of this.fields) {
+        const _json = json;
+        field.set(ret, field.desc.fromJson(_json[field.name]));
+      }
+      return ret;
+    }
+    return this.isPtr ? null : this.factory();
+  }
+  toJson(v) {
+    if (v == null) {
+      return null;
+    }
+    const ret = {};
+    for (const field of this.fields) {
+      ret[field.name] = field.desc.toJson(field.get(v));
+    }
+    return ret;
   }
   zero() {
     return null;
@@ -1786,6 +1511,21 @@ var RefDescriptor = class {
     this.desc = desc;
     this.isPtr = isPtr;
   }
+  factory() {
+    return this.desc.factory();
+  }
+  toJson(v) {
+    if (v == null) {
+      return null;
+    }
+    return this.desc.toJson(v);
+  }
+  fromJson(json) {
+    if (json == null && this.isPtr) {
+      return null;
+    }
+    return this.desc.fromJson(json);
+  }
   zero() {
     return null;
   }
@@ -1818,6 +1558,15 @@ var SyncDescriptor = class {
   constructor(f) {
     this.f = f;
   }
+  factory() {
+    return this.Desc().factory();
+  }
+  toJson(v) {
+    return this.Desc().toJson(v);
+  }
+  fromJson(json) {
+    return this.Desc().fromJson(json);
+  }
   Desc() {
     if (!this.cached) {
       this.cached = this.f();
@@ -1837,70 +1586,559 @@ var SyncDescriptor = class {
     return this.Desc().decode(r, typ, valRead, valueLen, target);
   }
 };
-function NewDataDescriptor(factory, fields, extends_, isPtr) {
-  return new DataDescriptor(factory, fields, extends_ ?? /* @__PURE__ */ new Map(), isPtr ?? false);
+
+// src/hrpc/rpc.ts
+var Error2 = class {
+  constructor(code, msg) {
+    this.code = code;
+    this.msg = msg;
+  }
+  descriptors() {
+    return errorDesc;
+  }
+};
+var Result = class extends Error2 {
+  constructor(code, msg, data, desc) {
+    super(code, msg);
+    this.data = data;
+    this.desc = desc;
+  }
+  descriptors() {
+    const dataDesc = this.desc ?? (isHData(this.data) ? this.data.descriptors() : void 0);
+    return NewResultDesc(dataDesc);
+  }
+};
+var errorDesc = new DataDescriptor(
+  () => new Error2(0, ""),
+  /* @__PURE__ */ new Map([
+    [1, {
+      name: "code",
+      desc: new Int32Descriptor(),
+      get: (o) => o.code,
+      set: (o, v) => o.code = v
+    }],
+    [2, {
+      name: "msg",
+      desc: new StringDescriptor(),
+      get: (o) => o.msg,
+      set: (o, v) => o.msg = v
+    }]
+  ])
+);
+function NewResultDesc(dataDesc) {
+  const fields = /* @__PURE__ */ new Map([
+    [1, {
+      name: "code",
+      desc: new Int32Descriptor(),
+      get: (o) => o.code,
+      set: (o, v) => o.code = v
+    }],
+    [2, {
+      name: "msg",
+      desc: new StringDescriptor(),
+      get: (o) => o.msg,
+      set: (o, v) => o.msg = v
+    }]
+  ]);
+  if (dataDesc) {
+    fields.set(3, {
+      name: "data",
+      desc: new RefDescriptor(dataDesc, true),
+      get: (o) => o.data,
+      set: (o, v) => o.data = v
+    });
+  }
+  return new DataDescriptor(
+    () => new Result(0, ""),
+    fields
+  );
 }
-function NewRefDescriptor(desc, isPtr = false) {
-  return new RefDescriptor(desc, isPtr);
+var JsonDescriptor = class {
+  constructor(isPtr = false) {
+    this.isPtr = isPtr;
+  }
+  factory() {
+    return null;
+  }
+  fromJson(json) {
+    if (json == null) {
+      return this.isPtr ? null : void 0;
+    }
+    return json;
+  }
+  toJson(v) {
+    return v == null ? null : v;
+  }
+  zero() {
+    return null;
+  }
+  isEmpty(v) {
+    return v == null;
+  }
+  encode(buf, v, id) {
+    throw new HBufError("json descriptor: encode not supported");
+  }
+  decode(r, typ, valRead, valueLen, target) {
+    throw new HBufError("json descriptor: decode not supported");
+  }
+};
+function NewJsonDecoder() {
+  const decoder = new TextDecoder("utf-8");
+  return (buffer, desc) => {
+    const str = decoder.decode(buffer);
+    return desc.fromJson(JSON.parse(str));
+  };
 }
-function NewListDescriptor(desc, isPtr = false) {
-  return new ListDescriptor(desc, isPtr);
+function NewJsonEncode() {
+  const encoder = new TextEncoder();
+  return (v) => {
+    const str = JSON.stringify(v.descriptors().toJson(v));
+    return encoder.encode(str).buffer;
+  };
 }
-function NewMapDescriptor(keyDesc, valueDesc, isPtr = false) {
-  return new MapDescriptor(keyDesc, valueDesc, isPtr);
+function NewHBufEncode() {
+  return (v) => {
+    return Marshal(v).slice().buffer;
+  };
 }
-function NewInt8Descriptor(isPtr = false) {
-  return new Int8Descriptor(isPtr);
+function NewHBufDecoder() {
+  return (buffer, desc) => {
+    const data = desc.factory();
+    Unmarshal(new Uint8Array(buffer), data, desc);
+    return data;
+  };
 }
-function NewInt16Descriptor(isPtr = false) {
-  return new Int16Descriptor(isPtr);
+var Client = class {
+  constructor(request, option) {
+    this.request = request;
+    this.middleware = (next) => {
+      for (let i = (option?.middleware?.length ?? 0) - 1; i >= 0; i--) {
+        next = option.middleware[i](next);
+      }
+      return next;
+    };
+  }
+  invoke(id, name, method, request, desc) {
+    name = name.replace(/^\/+|\/+$/g, "") + "/";
+    return this.middleware(async (req, opt) => {
+      const resp = await this.request(name + method, desc == null, req, desc, opt);
+      if (desc) {
+        if (resp.code !== 0) {
+          throw resp;
+        }
+        return resp.data;
+      }
+      return resp;
+    })(request, { method, headers: new Headers() });
+  }
+};
+var Server = class {
+  constructor(option) {
+    this.decode = option?.decode ?? NewJsonDecoder();
+    this.encode = option?.encode ?? NewJsonEncode();
+    this.methods = {};
+    this.middleware = (next) => {
+      for (let i = (option?.middleware?.length ?? 0) - 1; i >= 0; i--) {
+        next = option.middleware[i](next);
+      }
+      return next;
+    };
+  }
+  register(id, name, methods) {
+    name = "/" + name.replace(/^\/+|\/+$/g, "") + "/";
+    for (const method of methods) {
+      const key = method.name.replace(/|\/+$/g, "");
+      this.methods[name + key] = method;
+    }
+  }
+  unRegister(id, name) {
+    name = "/" + name.replace(/^\/+|\/+$/g, "") + "/";
+    for (const key in this.methods) {
+      if (key.startsWith(name)) {
+        delete this.methods[key];
+      }
+    }
+  }
+  async response(path, req) {
+    path = "/" + path.replace(/^\/+|\/+$/g, "");
+    const method = this.methods[path];
+    if (!method) {
+      throw new Error2(-1, "Method not found");
+    }
+    let val = req;
+    if (method.desc) {
+      if (req instanceof ArrayBuffer || req instanceof Uint8Array) {
+        const buf = req instanceof ArrayBuffer ? req : req.buffer.slice(req.byteOffset, req.byteOffset + req.byteLength);
+        val = this.decode(buf, method.desc);
+      } else {
+        val = method.desc.fromJson(req);
+      }
+    }
+    return await this.middleware(method.handler)(val);
+  }
+};
+
+// src/utils/tools.ts
+async function waiting(time) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => resolve(), Math.max(time, 0));
+  });
 }
-function NewInt32Descriptor(isPtr = false) {
-  return new Int32Descriptor(isPtr);
+function convertArray(list, call) {
+  if (null == list) {
+    return null;
+  }
+  let ret = new Array(list.length);
+  for (const key in list) {
+    ret[key] = call(list[key]);
+  }
+  return ret;
 }
-function NewInt64Descriptor(isPtr = false) {
-  return new Int64Descriptor(isPtr);
+var RecordEntry = class {
+  get val() {
+    return this._val;
+  }
+  get key() {
+    return this._key;
+  }
+  constructor(key, val) {
+    this._key = key;
+    this._val = val;
+  }
+};
+function convertRecord(record, call) {
+  if (null == record) {
+    return null;
+  }
+  let ret = {};
+  for (const key in record) {
+    let val = call(key, record[key]);
+    ret[val.key] = val.val;
+  }
+  return ret;
 }
-function NewUint8Descriptor(isPtr = false) {
-  return new Uint8Descriptor(isPtr);
+function isRecord(o) {
+  return Object.getPrototypeOf({}) === Object.getPrototypeOf(o);
 }
-function NewUint16Descriptor(isPtr = false) {
-  return new Uint16Descriptor(isPtr);
+function isArray(o) {
+  return Object.getPrototypeOf([]) === Object.getPrototypeOf(o);
 }
-function NewUint32Descriptor(isPtr = false) {
-  return new Uint32Descriptor(isPtr);
+function formatDate(date, format) {
+  if (!format) format = "YYYY-MM-DD";
+  switch (typeof date) {
+    case "string":
+      date = new Date(date.replace(/-/g, "/"));
+      break;
+    case "number":
+      date = new Date(date);
+      break;
+  }
+  if (date instanceof Date) {
+    const dict = {
+      YYYY: date.getFullYear(),
+      M: date.getMonth() + 1,
+      D: date.getDate(),
+      H: date.getHours(),
+      m: date.getMinutes(),
+      s: date.getSeconds(),
+      S: date.getMilliseconds(),
+      MM: ("" + (date.getMonth() + 101)).substring(1),
+      DD: ("" + (date.getDate() + 100)).substring(1),
+      HH: ("" + (date.getHours() + 100)).substring(1),
+      mm: ("" + (date.getMinutes() + 100)).substring(1),
+      ss: ("" + (date.getSeconds() + 100)).substring(1),
+      SS: ("" + (date.getMilliseconds() + 100)).substring(1)
+    };
+    return format.replace(/(YYYY|MM?|DD?|HH?|ss?|mm?|SS?)/g, function() {
+      return dict[arguments[0]];
+    });
+  }
+  return "" + date;
 }
-function NewUint64Descriptor(isPtr = false) {
-  return new Uint64Descriptor(isPtr);
+function isData(obj) {
+  return obj && typeof obj.descriptors === "function";
 }
-function NewFloatDescriptor(isPtr = false) {
-  return new FloatDescriptor(isPtr);
+var BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+function traceId() {
+  const milli = BigInt(Date.now());
+  const randBuf = new Uint8Array(9);
+  crypto.getRandomValues(randBuf);
+  let random65 = 0n;
+  for (let i = 0; i < 9; i++) {
+    random65 = random65 << 8n | BigInt(randBuf[i]);
+  }
+  random65 = random65 & (1n << 65n) - 1n;
+  let num = milli << 65n | random65;
+  const result = new Array(18);
+  const target = 62n;
+  for (let i = 17; i >= 0; i--) {
+    const rem = num % target;
+    num = num / target;
+    result[i] = BASE62_CHARS[Number(rem)];
+  }
+  return result.join("");
 }
-function NewDoubleDescriptor(isPtr = false) {
-  return new DoubleDescriptor(isPtr);
+
+// src/hrpc/http.ts
+var HttpClient = class {
+  constructor(base, option) {
+    this.base = base.replace(/^\/+|\/+$/g, "") + "/";
+    this.decode = option?.decode ?? NewJsonDecoder();
+    this.encode = option?.encode ?? NewJsonEncode();
+  }
+  async request(path, notification, req, desc, opt) {
+    const body = isData(req) ? this.encode(req) : req;
+    const resp = await this.fetch(path, body, opt);
+    if (desc) {
+      return this.decode(resp instanceof Blob ? await resp.arrayBuffer() : resp, NewResultDesc(desc));
+    } else {
+      return resp;
+    }
+  }
+  async fetch(path, body, opt) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", this.base + path);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.setRequestHeader("X-Trace-Id", opt?.traceId ?? traceId());
+    xhr.send(body);
+    return new Promise((resolve, reject) => {
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          resolve(xhr.response);
+        } else {
+          reject(new Error(`HTTP Error: ${xhr.status} ${xhr.statusText}`));
+        }
+      };
+      xhr.onerror = () => {
+        reject(new Error("Network Error"));
+      };
+    });
+  }
+};
+var FetchClient = class {
+  constructor(base, option) {
+    this.base = base.replace(/^\/+|\/+$/g, "") + "/";
+    this.decode = option?.decode ?? NewJsonDecoder();
+    this.encode = option?.encode ?? NewJsonEncode();
+  }
+  async request(path, notification, req, desc, opt) {
+    const body = isData(req) ? this.encode(req) : req;
+    const resp = await this.fetch(path, body, opt);
+    if (desc) {
+      return this.decode(resp instanceof Blob ? await resp.arrayBuffer() : resp, NewResultDesc(desc));
+    } else {
+      return resp;
+    }
+  }
+  async fetch(path, body, opt) {
+    const headers = opt?.headers ?? new Headers();
+    headers.append("X-Trace-Id", opt?.traceId ?? traceId());
+    const res = await fetch(this.base + path, {
+      method: "POST",
+      body,
+      headers
+    });
+    if (res.ok) {
+      return res.arrayBuffer();
+    } else {
+      throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
+    }
+  }
+};
+
+// src/hrpc/websocket.ts
+var WebSocketData = class {
+  constructor(type, id, path, data) {
+    this.type = type;
+    this.id = id;
+    this.path = path;
+    this.data = data;
+  }
+  descriptors() {
+    const dataDesc = isHData(this.data) ? this.data.descriptors() : jsonDesc;
+    return webSocketDataDesc(dataDesc);
+  }
+};
+var jsonDesc = new JsonDescriptor(true);
+function webSocketDataDesc(dataDesc) {
+  return new DataDescriptor(
+    () => new WebSocketData(0 /* Request */),
+    /* @__PURE__ */ new Map([
+      [1, { name: "type", desc: new Uint8Descriptor(), get: (o) => o.type, set: (o, v) => o.type = v }],
+      [2, { name: "header", desc: new MapDescriptor(new StringDescriptor(), new ListDescriptor(new StringDescriptor()), true), get: (o) => o.header, set: (o, v) => o.header = v }],
+      [3, { name: "id", desc: new Int64Descriptor(true), get: (o) => o.id, set: (o, v) => o.id = v }],
+      [4, { name: "path", desc: new StringDescriptor(true), get: (o) => o.path, set: (o, v) => o.path = v }],
+      [5, { name: "status", desc: new Int32Descriptor(true), get: (o) => o.status, set: (o, v) => o.status = v }],
+      [6, { name: "data", desc: new RefDescriptor(dataDesc, true), get: (o) => o.data, set: (o, v) => o.data = v }]
+    ])
+  );
 }
-function NewBoolDescriptor(isPtr = false) {
-  return new BoolDescriptor(isPtr);
-}
-function NewStringDescriptor(isPtr = false) {
-  return new StringDescriptor(isPtr);
-}
-function NewBytesDescriptor(isPtr = false) {
-  return new BytesDescriptor(isPtr);
-}
-function NewTimeDescriptor(isPtr = false) {
-  return new TimeDescriptor(isPtr);
-}
-function NewDecimalDescriptor(isPtr = false) {
-  return new DecimalDescriptor(isPtr);
-}
-function NewSyncDescriptor(f) {
-  return new SyncDescriptor(f);
-}
+var FetchPromise = class {
+  constructor(resolve, reject) {
+    this.resolve = resolve;
+    this.reject = reject;
+  }
+};
+var WebSocketClient = class {
+  constructor(baseUrl, server, option) {
+    this.requestId = 0n;
+    this.requestMap = /* @__PURE__ */ new Map();
+    this.readTimeout = 3e4;
+    this.heartbeat = 3e4;
+    this.interval = null;
+    this.headTimeout = false;
+    this.baseUrl = baseUrl;
+    this.server = server;
+    this.readTimeout = option?.readTimeout ?? 3e4;
+    this.heartbeat = option?.heartbeat ?? 3e4;
+    this.decode = option?.decode ?? NewJsonDecoder();
+    this.encode = option?.encode ?? NewJsonEncode();
+  }
+  async request(path, notification, req, desc, opt) {
+    this.requestId++;
+    let data = new WebSocketData(
+      notification ? 2 /* Notification */ : 0 /* Request */,
+      this.requestId,
+      path
+    );
+    if (opt?.headers) {
+      const header = /* @__PURE__ */ new Map();
+      opt.headers.forEach((value, key) => {
+        header.set(key, (header.get(key) || []).concat(value));
+      });
+      data.header = header;
+    }
+    if (req instanceof Blob) {
+      req = await req.arrayBuffer();
+    }
+    data.data = req;
+    const body = this.encode(data);
+    const promise = new Promise((resolve, reject) => {
+      let timer;
+      const p = new FetchPromise((value) => {
+        if (this.requestMap.delete(data.id)) {
+          clearTimeout(timer);
+          resolve(value);
+        }
+      }, (e) => {
+        if (this.requestMap.delete(data.id)) {
+          clearTimeout(timer);
+          reject(e);
+        }
+      });
+      if (!notification) {
+        timer = setTimeout(() => {
+          if (this.requestMap.delete(data.id)) {
+            reject("timeout");
+          }
+        }, this.readTimeout);
+        this.requestMap.set(data.id, p);
+      }
+    });
+    this.socket?.send(body);
+    if (notification) {
+      return;
+    }
+    data = await promise;
+    if (desc) {
+      return NewResultDesc(desc).fromJson(data.data);
+    }
+    return data.data;
+  }
+  connect(protocols) {
+    let url = this.baseUrl;
+    return new Promise((resolve, r) => {
+      let reject = r;
+      clearInterval(this.interval ?? 0);
+      try {
+        this.socket = new WebSocket(url, protocols);
+        this.socket.onclose = (event) => {
+          clearInterval(this.interval ?? 0);
+          this.onclose?.call(this, event.reason);
+        };
+        this.socket.onerror = (event) => {
+          reject?.call(this, event);
+          reject = null;
+        };
+        this.socket.onmessage = async (event) => {
+          try {
+            let buffer = event.data instanceof Blob ? await event.data.arrayBuffer() : event.data;
+            await this.onMessage(buffer);
+          } catch (e) {
+            if (e != "Method not found") {
+              console.log(e);
+            }
+          }
+        };
+        this.socket.onopen = (event) => {
+          this.interval = setInterval(() => this.onHeartbeat(), this.heartbeat);
+          resolve();
+        };
+      } catch (e) {
+        reject?.call(this, e);
+        reject = null;
+      }
+    });
+  }
+  close() {
+    clearInterval(this.interval ?? 0);
+    this.socket?.close();
+  }
+  async onMessage(buffer) {
+    this.headTimeout = false;
+    const response = this.decode(buffer, webSocketDataDesc(jsonDesc));
+    if (response.type == 1 /* Response */) {
+      if (response.status == 200) {
+        this.requestMap.get(response.id)?.resolve(response);
+      } else {
+        this.requestMap.get(response.id)?.reject(`Error: ${response.status}`);
+      }
+    } else if (response.type == 3 /* Ping */) {
+      const data = new WebSocketData(4 /* Pong */);
+      this.socket?.send(this.encode(data));
+    } else if (response.type == 0 /* Request */ || response.type == 2 /* Notification */) {
+      await this.onRequest(response, response.type == 2 /* Notification */);
+    }
+  }
+  async onRequest(request, broadcast) {
+    if (broadcast) {
+      this.server?.response(request.path, request.data);
+      return;
+    }
+    let data = new WebSocketData(
+      1 /* Response */,
+      request.id,
+      request.path
+    );
+    if (this.server) {
+      let resp = await this.server?.response(request.path, request.data);
+      if (resp instanceof Blob) {
+        resp = await resp.arrayBuffer();
+      }
+      data.status = 200;
+      data.data = resp instanceof ArrayBuffer ? resp : new Result(0, "ok", resp);
+    } else {
+      data.status = 404;
+    }
+    this.socket?.send(this.encode(data));
+  }
+  onHeartbeat() {
+    if (this.socket?.OPEN) {
+      if (this.headTimeout) {
+        this.socket.close();
+        clearInterval(this.interval ?? 0);
+        this.onclose?.call(this, "timeout");
+        return;
+      }
+      const data = new WebSocketData(3 /* Ping */);
+      this.socket.send(this.encode(data));
+      this.headTimeout = true;
+    }
+  }
+};
 
 // src/index.ts
 var index_default = {
-  Data,
   Client,
   HttpClient,
   FetchClient,
@@ -1941,26 +2179,6 @@ var index_default = {
   DataDescriptor,
   RefDescriptor,
   SyncDescriptor,
-  NewInt8Descriptor,
-  NewInt16Descriptor,
-  NewInt32Descriptor,
-  NewInt64Descriptor,
-  NewUint8Descriptor,
-  NewUint16Descriptor,
-  NewUint32Descriptor,
-  NewUint64Descriptor,
-  NewFloatDescriptor,
-  NewDoubleDescriptor,
-  NewBoolDescriptor,
-  NewStringDescriptor,
-  NewBytesDescriptor,
-  NewTimeDescriptor,
-  NewDecimalDescriptor,
-  NewListDescriptor,
-  NewMapDescriptor,
-  NewDataDescriptor,
-  NewRefDescriptor,
-  NewSyncDescriptor,
   traceId
 };
 // Annotate the CommonJS export names for ESM import in node:
@@ -1968,7 +2186,6 @@ var index_default = {
   BoolDescriptor,
   BytesDescriptor,
   Client,
-  Data,
   DataDescriptor,
   DecimalDescriptor,
   DoubleDescriptor,
@@ -1984,30 +2201,10 @@ var index_default = {
   ListDescriptor,
   MapDescriptor,
   Marshal,
-  NewBoolDescriptor,
-  NewBytesDescriptor,
-  NewDataDescriptor,
-  NewDecimalDescriptor,
-  NewDoubleDescriptor,
-  NewFloatDescriptor,
   NewHBufDecoder,
   NewHBufEncode,
-  NewInt16Descriptor,
-  NewInt32Descriptor,
-  NewInt64Descriptor,
-  NewInt8Descriptor,
   NewJsonDecoder,
   NewJsonEncode,
-  NewListDescriptor,
-  NewMapDescriptor,
-  NewRefDescriptor,
-  NewStringDescriptor,
-  NewSyncDescriptor,
-  NewTimeDescriptor,
-  NewUint16Descriptor,
-  NewUint32Descriptor,
-  NewUint64Descriptor,
-  NewUint8Descriptor,
   Reader,
   RecordEntry,
   RefDescriptor,

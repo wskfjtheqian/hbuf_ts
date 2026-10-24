@@ -2,6 +2,7 @@
  * Descriptor 描述一个 HBuf 值的编解码方式（对应 Go 版 Descriptor，无 unsafe 偏移）。
  */
 interface Descriptor {
+    factory(): any;
     /** 元素缺失时的零值（List 元素 / Map Key/Value 的空标记场景）。 */
     zero(): any;
     /** 判断字段值是否为空（零值 / null），为空时字段不写入。 */
@@ -17,11 +18,16 @@ interface Descriptor {
      * target 存在时（Data 类型）就地填充并返回该实例。
      */
     decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any;
+    toJson(v: any): JsonValue;
+    fromJson(json: JsonValue): any;
 }
 /** 数值基类（int / uint 系） */
 declare abstract class IntBase implements Descriptor {
     protected isPtr: boolean;
     protected constructor(isPtr?: boolean);
+    abstract factory(): any;
+    abstract fromJson(json: JsonValue): any;
+    abstract toJson(v: any): JsonValue;
     abstract zero(): any;
     protected abstract typ(): Type;
     protected abstract length(v: bigint): number;
@@ -37,6 +43,9 @@ declare abstract class IntBase implements Descriptor {
 }
 declare class SignedInt extends IntBase {
     private bits;
+    factory(): any;
+    fromJson(json: JsonValue): any;
+    toJson(v: any): JsonValue;
     constructor(isPtr: boolean, bits: number);
     zero(): any;
     protected typ(): Type;
@@ -46,6 +55,9 @@ declare class SignedInt extends IntBase {
     protected fromBigInt(v: bigint): any;
 }
 declare class SignedLong extends IntBase {
+    factory(): any;
+    fromJson(json: JsonValue): any;
+    toJson(v: any): JsonValue;
     constructor(isPtr: boolean);
     zero(): any;
     protected typ(): Type;
@@ -56,6 +68,9 @@ declare class SignedLong extends IntBase {
 }
 declare class UnsignedInt extends IntBase {
     private bits;
+    factory(): any;
+    fromJson(json: JsonValue): any;
+    toJson(v: any): JsonValue;
     constructor(isPtr: boolean, bits: number);
     zero(): any;
     protected typ(): Type;
@@ -65,6 +80,9 @@ declare class UnsignedInt extends IntBase {
     protected fromBigInt(v: bigint): any;
 }
 declare class UnsignedLong extends IntBase {
+    factory(): any;
+    fromJson(json: JsonValue): any;
+    toJson(v: any): JsonValue;
     constructor(isPtr: boolean);
     zero(): any;
     protected typ(): Type;
@@ -108,6 +126,9 @@ declare abstract class FloatBase implements Descriptor {
     protected isPtr: boolean;
     private isDouble;
     protected constructor(isPtr: boolean | undefined, isDouble: boolean);
+    factory(): any;
+    fromJson(json: JsonValue): any;
+    toJson(v: any): JsonValue;
     abstract zero(): any;
     protected abstract toBits(v: number): bigint;
     protected isEmptyField(v: any): boolean;
@@ -129,6 +150,9 @@ declare class DoubleDescriptor extends FloatBase {
 declare class BoolDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
+    factory(): boolean;
+    fromJson(json: JsonValue): boolean | null;
+    toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
@@ -138,6 +162,9 @@ declare class BoolDescriptor implements Descriptor {
 declare class StringDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
+    factory(): string;
+    fromJson(json: JsonValue): string | null;
+    toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
@@ -147,6 +174,9 @@ declare class StringDescriptor implements Descriptor {
 declare class BytesDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
+    factory(): ArrayBuffer;
+    fromJson(json: JsonValue): JsonValue;
+    toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
@@ -156,15 +186,21 @@ declare class BytesDescriptor implements Descriptor {
 declare class TimeDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
+    factory(): Date;
+    fromJson(json: JsonValue): Date | null;
+    toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
     decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any;
 }
-/** Decimal：以字符串承载（wire 上为十进制文本）。 */
+/** Decimal：以 decimal.js Decimal 承载（wire 上为十进制文本）。 */
 declare class DecimalDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
+    factory(): any;
+    fromJson(json: JsonValue): any;
+    toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
@@ -175,6 +211,9 @@ declare class ListDescriptor implements Descriptor {
     private desc;
     private isPtr;
     constructor(desc: Descriptor, isPtr?: boolean);
+    factory(): any;
+    fromJson(json: JsonValue): any;
+    toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
@@ -186,6 +225,9 @@ declare class MapDescriptor implements Descriptor {
     private valueDesc;
     private isPtr;
     constructor(keyDesc: Descriptor, valueDesc: Descriptor, isPtr?: boolean);
+    factory(): any;
+    fromJson(json: JsonValue): any;
+    toJson(val: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
@@ -196,18 +238,21 @@ type FieldDesc = {
     desc: Descriptor;
     get: (o: any) => any;
     set: (o: any, v: any) => void;
+    name: string;
 };
 /**
  * DataDescriptor：字段按 ID 升序编码，尾部跟 EXTENDS-BLOCK。
  */
 declare class DataDescriptor implements Descriptor {
-    private factory;
+    factory: () => any;
     private fields;
     private fieldMap;
     private extends_;
     private extendMap;
     private isPtr;
     constructor(factory: () => any, fields: Map<number, FieldDesc>, extends_?: Map<number, FieldDesc>, isPtr?: boolean);
+    fromJson(json: JsonValue): any;
+    toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
@@ -221,6 +266,9 @@ declare class RefDescriptor implements Descriptor {
     private desc;
     private isPtr;
     constructor(desc: Descriptor, isPtr?: boolean);
+    factory(): any;
+    toJson(v: any): JsonValue;
+    fromJson(json: JsonValue): any;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
@@ -233,33 +281,19 @@ declare class SyncDescriptor implements Descriptor {
     private f;
     private cached?;
     constructor(f: () => Descriptor);
+    factory(): any;
+    toJson(v: any): JsonValue;
+    fromJson(json: JsonValue): any;
     Desc(): Descriptor;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
     decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any;
 }
-declare function NewDataDescriptor(factory: () => any, fields: Map<number, FieldDesc>, extends_?: Map<number, FieldDesc>, isPtr?: boolean): DataDescriptor;
-declare function NewRefDescriptor(desc: Descriptor, isPtr?: boolean): RefDescriptor;
-declare function NewListDescriptor(desc: Descriptor, isPtr?: boolean): ListDescriptor;
-declare function NewMapDescriptor(keyDesc: Descriptor, valueDesc: Descriptor, isPtr?: boolean): MapDescriptor;
-declare function NewInt8Descriptor(isPtr?: boolean): Int8Descriptor;
-declare function NewInt16Descriptor(isPtr?: boolean): Int16Descriptor;
-declare function NewInt32Descriptor(isPtr?: boolean): Int32Descriptor;
-declare function NewInt64Descriptor(isPtr?: boolean): Int64Descriptor;
-declare function NewUint8Descriptor(isPtr?: boolean): Uint8Descriptor;
-declare function NewUint16Descriptor(isPtr?: boolean): Uint16Descriptor;
-declare function NewUint32Descriptor(isPtr?: boolean): Uint32Descriptor;
-declare function NewUint64Descriptor(isPtr?: boolean): Uint64Descriptor;
-declare function NewFloatDescriptor(isPtr?: boolean): FloatDescriptor;
-declare function NewDoubleDescriptor(isPtr?: boolean): DoubleDescriptor;
-declare function NewBoolDescriptor(isPtr?: boolean): BoolDescriptor;
-declare function NewStringDescriptor(isPtr?: boolean): StringDescriptor;
-declare function NewBytesDescriptor(isPtr?: boolean): BytesDescriptor;
-declare function NewTimeDescriptor(isPtr?: boolean): TimeDescriptor;
-declare function NewDecimalDescriptor(isPtr?: boolean): DecimalDescriptor;
-declare function NewSyncDescriptor(f: () => Descriptor): SyncDescriptor;
 
+type JsonValue = string | number | boolean | null | undefined | JsonValue[] | {
+    [key: string]: JsonValue;
+};
 /**
  * HBuf 值类型枚举，与 Go 版 data.go 完全一致。
  */
@@ -323,19 +357,14 @@ declare class Reader {
 declare function Marshal(data: HData): Uint8Array;
 /**
  * Unmarshal 将 HBuf 二进制解码到数据对象中。
+ * desc 可选：动态描述符对象（如 RPC Result）的工厂实例自身描述符可能不完整，需显式传入。
  */
-declare function Unmarshal(buf: Uint8Array, data: HData): void;
-/** 兼容旧导出：FromMap（hrpc 层使用）。 */
-type FromMap = (map: Record<string, any>) => any;
-/** Data 抽象类（兼容原有 JSON codec 用法）。 */
-declare abstract class Data {
-    abstract toMap(): Record<string, any>;
-}
+declare function Unmarshal(buf: Uint8Array, data: HData, desc?: Descriptor): void;
 declare function isHData(obj: any): obj is HData;
 
 type BufferType = ArrayBuffer | Blob;
-type RequestType = BufferType | Data | undefined;
-type ResponseType = BufferType | Data | undefined | void;
+type RequestType = BufferType | HData | undefined;
+type ResponseType = BufferType | HData | undefined | void;
 interface Option {
     headers: Headers;
     method: string;
@@ -343,21 +372,27 @@ interface Option {
 }
 type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>;
 type HandlerMiddleware = (next: Handler) => Handler;
-type Encoder = (v: Data) => ArrayBuffer;
-type Decoder = (reader: ArrayBuffer, from: FromMap) => Data;
-type Request = (path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option) => Promise<ResponseType>;
-declare class Error$1 extends Data {
+type Encoder = (v: HData) => ArrayBuffer;
+type Decoder = (reader: ArrayBuffer, desc: DataDescriptor) => HData;
+type Request = (path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option) => Promise<ResponseType>;
+/**
+ * Error RPC 错误对象（与 Result 共用 code/msg 编解码约定）。
+ */
+declare class Error$1 implements HData {
     constructor(code: number, msg: string);
     code: number;
     msg: string;
-    toMap(): Record<string, any>;
+    descriptors(): Descriptor;
 }
+/**
+ * Result RPC 结果包装：code/msg 与可选的 data 负载。
+ * data 的编解码使用响应描述符（构造时传入，或编码时取自 data 自身）。
+ */
 declare class Result extends Error$1 {
-    data?: Data;
-    from?: FromMap;
-    constructor(code: number, msg: string, data?: Data, from?: FromMap);
-    toMap(): Record<string, any>;
-    fromMap(map: Record<string, any>): Result;
+    data?: HData;
+    desc?: Descriptor;
+    constructor(code: number, msg: string, data?: HData, desc?: Descriptor);
+    descriptors(): Descriptor;
 }
 declare function NewJsonDecoder(): Decoder;
 declare function NewJsonEncode(): Encoder;
@@ -370,14 +405,14 @@ declare class Client {
     request: Request;
     middleware: HandlerMiddleware;
     constructor(request: Request, option?: ClientOption);
-    invoke<T extends ResponseType>(id: number, name: string, method: string, request: RequestType, from?: FromMap): Promise<T>;
+    invoke<T extends ResponseType>(id: number, name: string, method: string, request: RequestType, desc?: DataDescriptor): Promise<T>;
 }
 interface Method {
     id: number;
     name: string;
     handler: Handler;
     withContext: (opt?: Option) => Option | undefined;
-    from?: FromMap;
+    desc?: DataDescriptor;
 }
 interface ServerOption {
     decode?: Decoder;
@@ -392,7 +427,7 @@ declare class Server {
     constructor(option?: ServerOption);
     register(id: number, name: string, methods: Method[]): void;
     unRegister(id: number, name: string): void;
-    response(path: string, req: ArrayBuffer | Record<string, any>): Promise<ResponseType>;
+    response(path: string, req: ArrayBuffer | Uint8Array | Record<string, any>): Promise<ResponseType>;
 }
 
 interface HttpClientOption {
@@ -404,7 +439,7 @@ declare class HttpClient {
     protected decode: Decoder;
     protected encode: Encoder;
     constructor(base: string, option?: HttpClientOption);
-    request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType>;
+    request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType>;
     protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
 }
 declare class FetchClient {
@@ -412,7 +447,7 @@ declare class FetchClient {
     protected decode: Decoder;
     protected encode: Encoder;
     constructor(base: string, option?: HttpClientOption);
-    request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType>;
+    request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType>;
     protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
 }
 
@@ -423,16 +458,19 @@ declare enum RpcType {
     Ping = 3,
     Pong = 4
 }
-declare class WebSocketData {
+/**
+ * WebSocketData WebSocket 信封：type/header/id/path/status + 异构 data 负载。
+ * data 为 HData 时按其描述符编解码，否则走 JSON 透传（JsonDescriptor）。
+ */
+declare class WebSocketData implements HData {
     type: RpcType;
-    header?: Record<string, string[]>;
-    data?: ArrayBuffer | Data | void;
+    header?: Map<string, string[]>;
+    data?: ArrayBuffer | HData | void;
     id?: bigint;
     path?: string;
     status?: number;
-    constructor(type: RpcType, id?: bigint, path?: string, data?: ArrayBuffer | Data);
-    toMap(): Record<string, any>;
-    static fromMap(map: Record<string, any>): WebSocketData;
+    constructor(type: RpcType, id?: bigint, path?: string, data?: ArrayBuffer | HData);
+    descriptors(): Descriptor;
 }
 declare class FetchPromise {
     resolve: (value: WebSocketData | PromiseLike<WebSocketData>) => void;
@@ -459,7 +497,7 @@ declare class WebSocketClient {
     protected encode: Encoder;
     onclose?: ((code: string) => any) | null;
     constructor(baseUrl: string, server?: Server, option?: WebSocketClientOption);
-    request(path: string, notification: boolean, req: RequestType, from?: FromMap, opt?: Option): Promise<ResponseType>;
+    request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType>;
     connect(protocols?: string | string[]): Promise<void>;
     close(): void;
     private onMessage;
@@ -484,7 +522,6 @@ declare function isData(obj: any): boolean;
 declare function traceId(): string;
 
 declare const _default: {
-    Data: typeof Data;
     Client: typeof Client;
     HttpClient: typeof HttpClient;
     FetchClient: typeof FetchClient;
@@ -525,27 +562,7 @@ declare const _default: {
     DataDescriptor: typeof DataDescriptor;
     RefDescriptor: typeof RefDescriptor;
     SyncDescriptor: typeof SyncDescriptor;
-    NewInt8Descriptor: typeof NewInt8Descriptor;
-    NewInt16Descriptor: typeof NewInt16Descriptor;
-    NewInt32Descriptor: typeof NewInt32Descriptor;
-    NewInt64Descriptor: typeof NewInt64Descriptor;
-    NewUint8Descriptor: typeof NewUint8Descriptor;
-    NewUint16Descriptor: typeof NewUint16Descriptor;
-    NewUint32Descriptor: typeof NewUint32Descriptor;
-    NewUint64Descriptor: typeof NewUint64Descriptor;
-    NewFloatDescriptor: typeof NewFloatDescriptor;
-    NewDoubleDescriptor: typeof NewDoubleDescriptor;
-    NewBoolDescriptor: typeof NewBoolDescriptor;
-    NewStringDescriptor: typeof NewStringDescriptor;
-    NewBytesDescriptor: typeof NewBytesDescriptor;
-    NewTimeDescriptor: typeof NewTimeDescriptor;
-    NewDecimalDescriptor: typeof NewDecimalDescriptor;
-    NewListDescriptor: typeof NewListDescriptor;
-    NewMapDescriptor: typeof NewMapDescriptor;
-    NewDataDescriptor: typeof NewDataDescriptor;
-    NewRefDescriptor: typeof NewRefDescriptor;
-    NewSyncDescriptor: typeof NewSyncDescriptor;
     traceId: typeof traceId;
 };
 
-export { BoolDescriptor, type BufferType, BytesDescriptor, Client, type ClientOption, Data, DataDescriptor, DecimalDescriptor, type Decoder, DoubleDescriptor, type Encoder, Error$1 as Error, FetchClient, type FieldDesc, FloatDescriptor, type FromMap, type Descriptor as HBufDescriptor, HBufError, type HData, type Handler, type HandlerMiddleware, HttpClient, Int16Descriptor, Int32Descriptor, Int64Descriptor, Int8Descriptor, ListDescriptor, MapDescriptor, Marshal, type Method, NewBoolDescriptor, NewBytesDescriptor, NewDataDescriptor, NewDecimalDescriptor, NewDoubleDescriptor, NewFloatDescriptor, NewHBufDecoder, NewHBufEncode, NewInt16Descriptor, NewInt32Descriptor, NewInt64Descriptor, NewInt8Descriptor, NewJsonDecoder, NewJsonEncode, NewListDescriptor, NewMapDescriptor, NewRefDescriptor, NewStringDescriptor, NewSyncDescriptor, NewTimeDescriptor, NewUint16Descriptor, NewUint32Descriptor, NewUint64Descriptor, NewUint8Descriptor, type Option, Reader, RecordEntry, RefDescriptor, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, ShortBufferError, StringDescriptor, SyncDescriptor, TimeDescriptor, Type, Uint16Descriptor, Uint32Descriptor, Uint64Descriptor, Uint8Descriptor, Unmarshal, WebSocketClient, type WebSocketClientOption, WebSocketData, Writer, convertArray, convertRecord, _default as default, formatDate, isArray, isData, isHData, isRecord, traceId, waiting };
+export { BoolDescriptor, type BufferType, BytesDescriptor, Client, type ClientOption, DataDescriptor, DecimalDescriptor, type Decoder, type Descriptor, DoubleDescriptor, type Encoder, Error$1 as Error, FetchClient, type FieldDesc, FloatDescriptor, HBufError, type HData, type Handler, type HandlerMiddleware, HttpClient, Int16Descriptor, Int32Descriptor, Int64Descriptor, Int8Descriptor, ListDescriptor, MapDescriptor, Marshal, type Method, NewHBufDecoder, NewHBufEncode, NewJsonDecoder, NewJsonEncode, type Option, Reader, RecordEntry, RefDescriptor, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, ShortBufferError, StringDescriptor, SyncDescriptor, TimeDescriptor, Type, Uint16Descriptor, Uint32Descriptor, Uint64Descriptor, Uint8Descriptor, Unmarshal, WebSocketClient, type WebSocketClientOption, WebSocketData, Writer, convertArray, convertRecord, _default as default, formatDate, isArray, isData, isHData, isRecord, traceId, waiting };

@@ -21,6 +21,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "test": "node --import tsx --test test/*.test.ts",
+    "test:rpc": "node --import tsx --test test/rpc.test.ts",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
