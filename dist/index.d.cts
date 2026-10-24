@@ -19,14 +19,14 @@ interface Descriptor {
      */
     decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any;
     toJson(v: any): JsonValue;
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
 }
 /** 数值基类（int / uint 系） */
 declare abstract class IntBase implements Descriptor {
     protected isPtr: boolean;
     protected constructor(isPtr?: boolean);
     abstract factory(): any;
-    abstract fromJson(json: JsonValue): any;
+    abstract fromJson(json: JsonValue, target?: any): any;
     abstract toJson(v: any): JsonValue;
     abstract zero(): any;
     protected abstract typ(): Type;
@@ -44,7 +44,7 @@ declare abstract class IntBase implements Descriptor {
 declare class SignedInt extends IntBase {
     private bits;
     factory(): any;
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
     constructor(isPtr: boolean, bits: number);
     zero(): any;
@@ -56,7 +56,7 @@ declare class SignedInt extends IntBase {
 }
 declare class SignedLong extends IntBase {
     factory(): any;
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
     constructor(isPtr: boolean);
     zero(): any;
@@ -69,7 +69,7 @@ declare class SignedLong extends IntBase {
 declare class UnsignedInt extends IntBase {
     private bits;
     factory(): any;
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
     constructor(isPtr: boolean, bits: number);
     zero(): any;
@@ -81,7 +81,7 @@ declare class UnsignedInt extends IntBase {
 }
 declare class UnsignedLong extends IntBase {
     factory(): any;
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
     constructor(isPtr: boolean);
     zero(): any;
@@ -127,7 +127,7 @@ declare abstract class FloatBase implements Descriptor {
     private isDouble;
     protected constructor(isPtr: boolean | undefined, isDouble: boolean);
     factory(): any;
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
     abstract zero(): any;
     protected abstract toBits(v: number): bigint;
@@ -151,7 +151,7 @@ declare class BoolDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
     factory(): boolean;
-    fromJson(json: JsonValue): boolean | null;
+    fromJson(json: JsonValue, target?: any): boolean | null;
     toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
@@ -163,7 +163,7 @@ declare class StringDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
     factory(): string;
-    fromJson(json: JsonValue): string | null;
+    fromJson(json: JsonValue, target?: any): string | null;
     toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
@@ -175,7 +175,7 @@ declare class BytesDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
     factory(): ArrayBuffer;
-    fromJson(json: JsonValue): JsonValue;
+    fromJson(json: JsonValue, target?: any): JsonValue;
     toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
@@ -187,7 +187,7 @@ declare class TimeDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
     factory(): Date;
-    fromJson(json: JsonValue): Date | null;
+    fromJson(json: JsonValue, target?: any): Date | null;
     toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
@@ -199,7 +199,7 @@ declare class DecimalDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
     factory(): any;
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
@@ -212,7 +212,7 @@ declare class ListDescriptor implements Descriptor {
     private isPtr;
     constructor(desc: Descriptor, isPtr?: boolean);
     factory(): any;
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
@@ -226,7 +226,7 @@ declare class MapDescriptor implements Descriptor {
     private isPtr;
     constructor(keyDesc: Descriptor, valueDesc: Descriptor, isPtr?: boolean);
     factory(): any;
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
     toJson(val: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
@@ -238,7 +238,7 @@ type FieldDesc = {
     desc: Descriptor;
     get: (o: any) => any;
     set: (o: any, v: any) => void;
-    name: string;
+    name?: string;
 };
 /**
  * DataDescriptor：字段按 ID 升序编码，尾部跟 EXTENDS-BLOCK。
@@ -251,7 +251,7 @@ declare class DataDescriptor implements Descriptor {
     private extendMap;
     private isPtr;
     constructor(factory: () => any, fields: Map<number, FieldDesc>, extends_?: Map<number, FieldDesc>, isPtr?: boolean);
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
     zero(): any;
     isEmpty(v: any): boolean;
@@ -268,7 +268,7 @@ declare class RefDescriptor implements Descriptor {
     constructor(desc: Descriptor, isPtr?: boolean);
     factory(): any;
     toJson(v: any): JsonValue;
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
@@ -283,7 +283,7 @@ declare class SyncDescriptor implements Descriptor {
     constructor(f: () => Descriptor);
     factory(): any;
     toJson(v: any): JsonValue;
-    fromJson(json: JsonValue): any;
+    fromJson(json: JsonValue, target?: any): any;
     Desc(): Descriptor;
     zero(): any;
     isEmpty(v: any): boolean;
@@ -373,8 +373,8 @@ interface Option {
 type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>;
 type HandlerMiddleware = (next: Handler) => Handler;
 type Encoder = (v: HData) => ArrayBuffer;
-type Decoder = (reader: ArrayBuffer, desc: DataDescriptor) => HData;
-type Request = (path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option) => Promise<ResponseType>;
+type Decoder = (reader: ArrayBuffer, desc: Descriptor) => HData;
+type Request = (path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option) => Promise<ResponseType>;
 /**
  * Error RPC 错误对象（与 Result 共用 code/msg 编解码约定）。
  */
@@ -405,14 +405,14 @@ declare class Client {
     request: Request;
     middleware: HandlerMiddleware;
     constructor(request: Request, option?: ClientOption);
-    invoke<T extends ResponseType>(id: number, name: string, method: string, request: RequestType, desc?: DataDescriptor): Promise<T>;
+    invoke<T extends ResponseType>(id: number, name: string, method: string, request: RequestType, desc?: Descriptor): Promise<T>;
 }
 interface Method {
     id: number;
     name: string;
     handler: Handler;
     withContext: (opt?: Option) => Option | undefined;
-    desc?: DataDescriptor;
+    desc?: Descriptor;
 }
 interface ServerOption {
     decode?: Decoder;
@@ -439,7 +439,7 @@ declare class HttpClient {
     protected decode: Decoder;
     protected encode: Encoder;
     constructor(base: string, option?: HttpClientOption);
-    request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType>;
+    request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>;
     protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
 }
 declare class FetchClient {
@@ -447,7 +447,7 @@ declare class FetchClient {
     protected decode: Decoder;
     protected encode: Encoder;
     constructor(base: string, option?: HttpClientOption);
-    request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType>;
+    request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>;
     protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
 }
 
@@ -497,7 +497,7 @@ declare class WebSocketClient {
     protected encode: Encoder;
     onclose?: ((code: string) => any) | null;
     constructor(baseUrl: string, server?: Server, option?: WebSocketClientOption);
-    request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType>;
+    request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>;
     connect(protocols?: string | string[]): Promise<void>;
     close(): void;
     private onMessage;

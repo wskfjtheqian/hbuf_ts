@@ -415,7 +415,7 @@ var SignedInt = class extends IntBase {
   factory() {
     return 0;
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json !== null) {
       if (typeof json === "number" || typeof json === "string") {
         return Number(json);
@@ -449,7 +449,7 @@ var SignedLong = class extends IntBase {
   factory() {
     return 0n;
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json !== null) {
       if (typeof json === "number" || typeof json === "string") {
         return BigInt(json);
@@ -490,7 +490,7 @@ var UnsignedInt = class extends IntBase {
   factory() {
     return 0;
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json !== null) {
       if (typeof json === "number" || typeof json === "string") {
         return Number(json);
@@ -524,7 +524,7 @@ var UnsignedLong = class extends IntBase {
   factory() {
     return 0n;
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json !== null) {
       if (typeof json === "number" || typeof json === "string") {
         return BigInt(json);
@@ -616,7 +616,7 @@ var FloatBase = class {
   factory() {
     return 0;
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json !== null) {
       if (typeof json === "number" || typeof json === "string") {
         return Number(json);
@@ -724,7 +724,7 @@ var BoolDescriptor = class {
   factory() {
     return false;
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json !== null) {
       if (typeof json === "boolean" || typeof json === "string") {
         return Boolean(json);
@@ -802,7 +802,7 @@ var StringDescriptor = class {
   factory() {
     return "";
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json !== null) {
       if (typeof json === "string" || typeof json === "number" || typeof json === "boolean") {
         return String(json);
@@ -890,7 +890,7 @@ var BytesDescriptor = class {
   factory() {
     return new ArrayBuffer(0);
   }
-  fromJson(json) {
+  fromJson(json, target) {
     return json;
   }
   toJson(v) {
@@ -971,7 +971,7 @@ var TimeDescriptor = class {
   factory() {
     return /* @__PURE__ */ new Date(0);
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json != null) {
       if (typeof json === "number" || typeof json === "string") {
         return new Date(Number(json));
@@ -1037,7 +1037,7 @@ var DecimalDescriptor = class {
   factory() {
     return new Decimal(0);
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json != null) {
       if (typeof json === "string" || typeof json === "number") {
         return new Decimal(json);
@@ -1126,7 +1126,7 @@ var ListDescriptor = class {
   factory() {
     return [];
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (Array.isArray(json)) {
       const list = [];
       for (const item of json) {
@@ -1211,7 +1211,7 @@ var MapDescriptor = class {
   factory() {
     return /* @__PURE__ */ new Map();
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json != null) {
       const _json = json;
       const map = /* @__PURE__ */ new Map();
@@ -1297,12 +1297,17 @@ var DataDescriptor = class {
     this.extends_ = Array.from(extends_, ([id, f]) => ({ ...f, id })).sort((a, b) => a.id - b.id);
     this.extendMap = extends_;
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json != null) {
-      const ret = this.factory();
+      const ret = target ?? this.factory();
+      const _json = json;
       for (const field of this.fields) {
-        const _json = json;
-        field.set(ret, field.desc.fromJson(_json[field.name]));
+        if (field.name && _json[field.name] !== void 0) {
+          field.set(ret, field.desc.fromJson(_json[field.name]));
+        }
+      }
+      for (const f of this.extends_) {
+        f.desc.fromJson(_json, ret);
       }
       return ret;
     }
@@ -1312,9 +1317,14 @@ var DataDescriptor = class {
     if (v == null) {
       return null;
     }
-    const ret = {};
+    let ret = {};
+    for (const [_, field] of this.extendMap) {
+      ret = { ...ret, ...field.desc.toJson(field.get(v)) };
+    }
     for (const field of this.fields) {
-      ret[field.name] = field.desc.toJson(field.get(v));
+      if (field.name) {
+        ret[field.name] = field.desc.toJson(field.get(v));
+      }
     }
     return ret;
   }
@@ -1435,11 +1445,11 @@ var RefDescriptor = class {
     }
     return this.desc.toJson(v);
   }
-  fromJson(json) {
+  fromJson(json, target) {
     if (json == null && this.isPtr) {
       return null;
     }
-    return this.desc.fromJson(json);
+    return this.desc.fromJson(json, target);
   }
   zero() {
     return null;
@@ -1479,8 +1489,8 @@ var SyncDescriptor = class {
   toJson(v) {
     return this.Desc().toJson(v);
   }
-  fromJson(json) {
-    return this.Desc().fromJson(json);
+  fromJson(json, target) {
+    return this.Desc().fromJson(json, target);
   }
   Desc() {
     if (!this.cached) {
@@ -1879,12 +1889,42 @@ function webSocketDataDesc(dataDesc) {
   return new DataDescriptor(
     () => new WebSocketData(0 /* Request */),
     /* @__PURE__ */ new Map([
-      [1, { name: "type", desc: new Uint8Descriptor(), get: (o) => o.type, set: (o, v) => o.type = v }],
-      [2, { name: "header", desc: new MapDescriptor(new StringDescriptor(), new ListDescriptor(new StringDescriptor()), true), get: (o) => o.header, set: (o, v) => o.header = v }],
-      [3, { name: "id", desc: new Int64Descriptor(true), get: (o) => o.id, set: (o, v) => o.id = v }],
-      [4, { name: "path", desc: new StringDescriptor(true), get: (o) => o.path, set: (o, v) => o.path = v }],
-      [5, { name: "status", desc: new Int32Descriptor(true), get: (o) => o.status, set: (o, v) => o.status = v }],
-      [6, { name: "data", desc: new RefDescriptor(dataDesc, true), get: (o) => o.data, set: (o, v) => o.data = v }]
+      [1, {
+        name: "type",
+        desc: new Uint8Descriptor(),
+        get: (o) => o.type,
+        set: (o, v) => o.type = v
+      }],
+      [2, {
+        name: "header",
+        desc: new MapDescriptor(new StringDescriptor(), new ListDescriptor(new StringDescriptor()), true),
+        get: (o) => o.header,
+        set: (o, v) => o.header = v
+      }],
+      [3, {
+        name: "id",
+        desc: new Int64Descriptor(true),
+        get: (o) => o.id,
+        set: (o, v) => o.id = v
+      }],
+      [4, {
+        name: "path",
+        desc: new StringDescriptor(true),
+        get: (o) => o.path,
+        set: (o, v) => o.path = v
+      }],
+      [5, {
+        name: "status",
+        desc: new Int32Descriptor(true),
+        get: (o) => o.status,
+        set: (o, v) => o.status = v
+      }],
+      [6, {
+        name: "data",
+        desc: new RefDescriptor(dataDesc, true),
+        get: (o) => o.data,
+        set: (o, v) => o.data = v
+      }]
     ])
   );
 }

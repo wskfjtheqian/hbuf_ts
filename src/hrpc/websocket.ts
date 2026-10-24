@@ -1,6 +1,29 @@
 import {HData, isHData} from "../hbuf/data";
-import {DataDescriptor, Descriptor, FieldDesc, Int32Descriptor, Int64Descriptor, ListDescriptor, MapDescriptor, RefDescriptor, StringDescriptor, Uint8Descriptor} from "../hbuf/descriptor";
-import {Decoder, Encoder, JsonDescriptor, NewJsonDecoder, NewJsonEncode, NewResultDesc, Option, RequestType, ResponseType, Result, Server} from "./rpc";
+import {
+    DataDescriptor,
+    Descriptor,
+    FieldDesc,
+    Int32Descriptor,
+    Int64Descriptor,
+    ListDescriptor,
+    MapDescriptor,
+    RefDescriptor,
+    StringDescriptor,
+    Uint8Descriptor
+} from "../hbuf/descriptor";
+import {
+    Decoder,
+    Encoder,
+    JsonDescriptor,
+    NewJsonDecoder,
+    NewJsonEncode,
+    NewResultDesc,
+    Option,
+    RequestType,
+    ResponseType,
+    Result,
+    Server
+} from "./rpc";
 
 
 export enum RpcType {
@@ -43,12 +66,42 @@ function webSocketDataDesc(dataDesc: Descriptor): DataDescriptor {
     return new DataDescriptor(
         () => new WebSocketData(RpcType.Request),
         new Map<number, FieldDesc>([
-            [1, {name: "type", desc: new Uint8Descriptor(), get: (o: WebSocketData) => o.type, set: (o: WebSocketData, v: number) => o.type = v}],
-            [2, {name: "header", desc: new MapDescriptor(new StringDescriptor(), new ListDescriptor(new StringDescriptor()), true), get: (o: WebSocketData) => o.header, set: (o: WebSocketData, v: any) => o.header = v}],
-            [3, {name: "id", desc: new Int64Descriptor(true), get: (o: WebSocketData) => o.id, set: (o: WebSocketData, v: any) => o.id = v}],
-            [4, {name: "path", desc: new StringDescriptor(true), get: (o: WebSocketData) => o.path, set: (o: WebSocketData, v: any) => o.path = v}],
-            [5, {name: "status", desc: new Int32Descriptor(true), get: (o: WebSocketData) => o.status, set: (o: WebSocketData, v: any) => o.status = v}],
-            [6, {name: "data", desc: new RefDescriptor(dataDesc, true), get: (o: WebSocketData) => o.data, set: (o: WebSocketData, v: any) => o.data = v}],
+            [1, {
+                name: "type",
+                desc: new Uint8Descriptor(),
+                get: (o: WebSocketData) => o.type,
+                set: (o: WebSocketData, v: number) => o.type = v
+            }],
+            [2, {
+                name: "header",
+                desc: new MapDescriptor(new StringDescriptor(), new ListDescriptor(new StringDescriptor()), true),
+                get: (o: WebSocketData) => o.header,
+                set: (o: WebSocketData, v: any) => o.header = v
+            }],
+            [3, {
+                name: "id",
+                desc: new Int64Descriptor(true),
+                get: (o: WebSocketData) => o.id,
+                set: (o: WebSocketData, v: any) => o.id = v
+            }],
+            [4, {
+                name: "path",
+                desc: new StringDescriptor(true),
+                get: (o: WebSocketData) => o.path,
+                set: (o: WebSocketData, v: any) => o.path = v
+            }],
+            [5, {
+                name: "status",
+                desc: new Int32Descriptor(true),
+                get: (o: WebSocketData) => o.status,
+                set: (o: WebSocketData, v: any) => o.status = v
+            }],
+            [6, {
+                name: "data",
+                desc: new RefDescriptor(dataDesc, true),
+                get: (o: WebSocketData) => o.data,
+                set: (o: WebSocketData, v: any) => o.data = v
+            }],
         ]),
     )
 }
@@ -93,7 +146,7 @@ export class WebSocketClient {
         this.encode = option?.encode ?? NewJsonEncode()
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType> {
+    public async request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType> {
         this.requestId++
         let data = new WebSocketData(
             notification ? RpcType.Notification : RpcType.Request,
@@ -168,7 +221,7 @@ export class WebSocketClient {
                         let buffer: ArrayBuffer = event.data instanceof Blob ? await (event.data as Blob).arrayBuffer() : event.data
                         await this.onMessage(buffer)
                     } catch (e) {
-                        if (e != "Method not found"){
+                        if (e != "Method not found") {
                             console.log(e)
                         }
                     }

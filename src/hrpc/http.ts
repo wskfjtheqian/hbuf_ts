@@ -1,5 +1,5 @@
 import {BufferType, Decoder, Encoder, NewJsonDecoder, NewJsonEncode, NewResultDesc, Option, RequestType, ResponseType} from "./rpc";
-import {DataDescriptor} from "../hbuf/descriptor";
+import {Descriptor} from "../hbuf/descriptor";
 import {isData, traceId} from "../utils/tools";
 
 
@@ -21,7 +21,7 @@ export class HttpClient {
 
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType> {
+    public async request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType> {
         const body = isData(req) ? this.encode(req as any) : req as BufferType
         const resp = await this.fetch(path, body, opt)
         if (desc) {
@@ -66,7 +66,7 @@ export class FetchClient {
 
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option): Promise<ResponseType> {
+    public async request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType> {
         const body = isData(req) ? this.encode(req as any) : req as BufferType
         const resp = await this.fetch(path, body, opt)
         if (desc) {

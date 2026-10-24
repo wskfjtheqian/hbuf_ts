@@ -79,7 +79,7 @@ export interface Descriptor {
 
     toJson(v: any): JsonValue
 
-    fromJson(json: JsonValue): any
+    fromJson(json: JsonValue, target?: any): any
 }
 
 /** 数值基类（int / uint 系） */
@@ -89,7 +89,7 @@ abstract class IntBase implements Descriptor {
 
     public abstract factory(): any
 
-    abstract fromJson(json: JsonValue): any
+    abstract fromJson(json: JsonValue, target?: any): any
 
     abstract toJson(v: any): JsonValue
 
@@ -189,7 +189,7 @@ class SignedInt extends IntBase {
         return 0
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         if (json !== null) {
             if (typeof json === 'number' || typeof json === 'string') {
                 return Number(json)
@@ -198,7 +198,7 @@ class SignedInt extends IntBase {
         return this.isPtr ? null : this.factory()
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         return v
     }
 
@@ -236,7 +236,7 @@ class SignedLong extends IntBase {
         return 0n
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         if (json !== null) {
             if (typeof json === 'number' || typeof json === 'string') {
                 return BigInt(json)
@@ -245,7 +245,7 @@ class SignedLong extends IntBase {
         return this.isPtr ? null : this.factory()
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         return v == null ? null : v.toString()
     }
 
@@ -283,7 +283,7 @@ class UnsignedInt extends IntBase {
         return 0
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         if (json !== null) {
             if (typeof json === 'number' || typeof json === 'string') {
                 return Number(json)
@@ -292,7 +292,7 @@ class UnsignedInt extends IntBase {
         return this.isPtr ? null : this.factory()
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         return v
     }
 
@@ -330,7 +330,7 @@ class UnsignedLong extends IntBase {
         return 0n
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         if (json !== null) {
             if (typeof json === 'number' || typeof json === 'string') {
                 return BigInt(json)
@@ -339,7 +339,7 @@ class UnsignedLong extends IntBase {
         return this.isPtr ? null : this.factory()
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         return v == null ? null : v.toString()
     }
 
@@ -444,7 +444,7 @@ abstract class FloatBase implements Descriptor {
         return 0
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         if (json !== null) {
             if (typeof json === 'number' || typeof json === 'string') {
                 return Number(json)
@@ -453,7 +453,7 @@ abstract class FloatBase implements Descriptor {
         return this.isPtr ? null : this.factory()
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         return v == null ? null : this.isDouble ? v : Math.fround(v)
     }
 
@@ -572,7 +572,7 @@ export class BoolDescriptor implements Descriptor {
         return false
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         if (json !== null) {
             if (typeof json === 'boolean' || typeof json === 'string') {
                 return Boolean(json)
@@ -581,7 +581,7 @@ export class BoolDescriptor implements Descriptor {
         return this.isPtr ? null : this.factory()
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         return v
     }
 
@@ -660,7 +660,7 @@ export class StringDescriptor implements Descriptor {
         return ""
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         if (json !== null) {
             if (typeof json === 'string' || typeof json === 'number' || typeof json === 'boolean') {
                 return String(json)
@@ -669,7 +669,7 @@ export class StringDescriptor implements Descriptor {
         return this.isPtr ? null : this.factory()
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         return v
     }
 
@@ -758,11 +758,11 @@ export class BytesDescriptor implements Descriptor {
         return new ArrayBuffer(0)
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         return json
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         return v
     }
 
@@ -849,7 +849,7 @@ export class TimeDescriptor implements Descriptor {
         return new Date(0)
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         if (json != null) {
             if (typeof json === "number" || typeof json === "string") {
                 return new Date(Number(json))
@@ -859,7 +859,7 @@ export class TimeDescriptor implements Descriptor {
         return null
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         return v == null ? null : String((v as Date).getTime())
     }
 
@@ -926,7 +926,7 @@ export class DecimalDescriptor implements Descriptor {
         return new Decimal(0)
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         if (json != null) {
             if (typeof json === "string" || typeof json === "number") {
                 return new Decimal(json)
@@ -935,7 +935,7 @@ export class DecimalDescriptor implements Descriptor {
         return this.isPtr ? null : this.factory()
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         return v == null ? null : DecimalToStr(v)
     }
 
@@ -1024,7 +1024,7 @@ export class ListDescriptor implements Descriptor {
         return []
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         if (Array.isArray(json)) {
             const list: any[] = []
             for (const item of json) {
@@ -1035,7 +1035,7 @@ export class ListDescriptor implements Descriptor {
         return this.isPtr ? null : this.factory()
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         if (v == null) {
             return null
         }
@@ -1117,7 +1117,7 @@ export class MapDescriptor implements Descriptor {
         return new Map()
     }
 
-    fromJson(json: JsonValue): any {
+    public fromJson(json: JsonValue, target?: any): any {
         if (json != null) {
             const _json = json as Record<string, JsonValue>
             const map = new Map()
@@ -1129,7 +1129,7 @@ export class MapDescriptor implements Descriptor {
         return this.isPtr ? null : this.factory()
     }
 
-    toJson(val: any): JsonValue {
+    public toJson(val: any): JsonValue {
         if (val == null) {
             return null
         }
@@ -1206,7 +1206,7 @@ export type FieldDesc = {
     desc: Descriptor
     get: (o: any) => any
     set: (o: any, v: any) => void
-    name: string,
+    name?: string,
 }
 
 type Field = FieldDesc & { id: number }
@@ -1231,12 +1231,17 @@ export class DataDescriptor implements Descriptor {
         this.extendMap = extends_
     }
 
-    fromJson(json: JsonValue): any {
+    public fromJson(json: JsonValue, target?: any): any {
         if (json != null) {
-            const ret: any = this.factory()
+            const ret: any = target ?? this.factory()
+            const _json = json as Record<string, JsonValue>
             for (const field of this.fields) {
-                const _json = json as Record<string, JsonValue>
-                field.set(ret, field.desc.fromJson(_json[field.name]))
+                if (field.name && _json[field.name] !== undefined) {
+                    field.set(ret, field.desc.fromJson(_json[field.name]))
+                }
+            }
+            for (const f of this.extends_) {
+                f.desc.fromJson(_json, ret)
             }
             return ret
         }
@@ -1247,9 +1252,15 @@ export class DataDescriptor implements Descriptor {
         if (v == null) {
             return null
         }
-        const ret: Record<string, any> = {}
+        let ret: Record<string, any> = {}
+
+        for (const [_, field] of this.extendMap) {
+            ret = {...ret, ...field.desc.toJson(field.get(v)) as Record<string, any>}
+        }
         for (const field of this.fields) {
-            ret[field.name] = field.desc.toJson(field.get(v))
+            if (field.name) {
+                ret[field.name] = field.desc.toJson(field.get(v))
+            }
         }
         return ret
     }
@@ -1382,18 +1393,18 @@ export class RefDescriptor implements Descriptor {
         return this.desc.factory()
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         if (v == null) {
             return null
         }
         return this.desc.toJson(v)
     }
 
-    fromJson(json: JsonValue) {
+    public fromJson(json: JsonValue, target?: any) {
         if (json == null && this.isPtr) {
             return null
         }
-        return this.desc.fromJson(json)
+        return this.desc.fromJson(json, target)
     }
 
     public zero(): any {
@@ -1443,12 +1454,12 @@ export class SyncDescriptor implements Descriptor {
         return this.Desc().factory()
     }
 
-    toJson(v: any): JsonValue {
+    public toJson(v: any): JsonValue {
         return this.Desc().toJson(v)
     }
 
-    fromJson(json: JsonValue): any {
-        return this.Desc().fromJson(json)
+    public fromJson(json: JsonValue, target?: any): any {
+        return this.Desc().fromJson(json, target)
     }
 
     public Desc(): Descriptor {

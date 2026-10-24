@@ -31,9 +31,9 @@ export type HandlerMiddleware = (next: Handler) => Handler
 export type Encoder = (v: HData) => ArrayBuffer
 
 // Decoder 解码器：按数据描述符将二进制解码为 HData 实例。
-export type Decoder = (reader: ArrayBuffer, desc: DataDescriptor) => HData
+export type Decoder = (reader: ArrayBuffer, desc: Descriptor) => HData
 
-export type Request = (path: string, notification: boolean, req: RequestType, desc?: DataDescriptor, opt?: Option) => Promise<ResponseType>
+export type Request = (path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option) => Promise<ResponseType>
 
 
 /**
@@ -170,7 +170,7 @@ export class JsonDescriptor implements Descriptor {
 // NewJsonDecoder JSON 解码器：buffer → desc.fromJson。
 export function NewJsonDecoder(): Decoder {
     const decoder = new TextDecoder('utf-8');
-    return (buffer: ArrayBuffer, desc: DataDescriptor): HData => {
+    return (buffer: ArrayBuffer, desc: Descriptor): HData => {
         const str = decoder.decode(buffer);
         return desc.fromJson(JSON.parse(str))
     }
@@ -194,7 +194,7 @@ export function NewHBufEncode(): Encoder {
 
 // NewHBufDecoder HBuf 二进制解码器：由描述符工厂创建实例并就地填充。
 export function NewHBufDecoder(): Decoder {
-    return (buffer: ArrayBuffer, desc: DataDescriptor): HData => {
+    return (buffer: ArrayBuffer, desc: Descriptor): HData => {
         const data = desc.factory()
         // 显式传入 desc：动态描述符对象（如 Result）的工厂实例自身描述符不完整
         Unmarshal(new Uint8Array(buffer), data, desc)
@@ -225,7 +225,7 @@ export class Client {
         }
     }
 
-    public invoke<T extends ResponseType>(id: number, name: string, method: string, request: RequestType, desc?: DataDescriptor): Promise<T> {
+    public invoke<T extends ResponseType>(id: number, name: string, method: string, request: RequestType, desc?: Descriptor): Promise<T> {
         name = name.replace(/^\/+|\/+$/g, "") + "/"
         return this.middleware(async (req: RequestType, opt?: Option): Promise<ResponseType> => {
             const resp = await this.request(name + method, desc == null, req, desc, opt)
@@ -248,7 +248,7 @@ export interface Method {
     name: string
     handler: Handler
     withContext: (opt?: Option) => Option | undefined
-    desc?: DataDescriptor;
+    desc?: Descriptor;
 }
 
 export interface ServerOption {

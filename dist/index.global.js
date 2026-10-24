@@ -2666,7 +2666,7 @@ var hbuf = (() => {
     factory() {
       return 0;
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json !== null) {
         if (typeof json === "number" || typeof json === "string") {
           return Number(json);
@@ -2700,7 +2700,7 @@ var hbuf = (() => {
     factory() {
       return 0n;
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json !== null) {
         if (typeof json === "number" || typeof json === "string") {
           return BigInt(json);
@@ -2741,7 +2741,7 @@ var hbuf = (() => {
     factory() {
       return 0;
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json !== null) {
         if (typeof json === "number" || typeof json === "string") {
           return Number(json);
@@ -2775,7 +2775,7 @@ var hbuf = (() => {
     factory() {
       return 0n;
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json !== null) {
         if (typeof json === "number" || typeof json === "string") {
           return BigInt(json);
@@ -2867,7 +2867,7 @@ var hbuf = (() => {
     factory() {
       return 0;
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json !== null) {
         if (typeof json === "number" || typeof json === "string") {
           return Number(json);
@@ -2975,7 +2975,7 @@ var hbuf = (() => {
     factory() {
       return false;
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json !== null) {
         if (typeof json === "boolean" || typeof json === "string") {
           return Boolean(json);
@@ -3053,7 +3053,7 @@ var hbuf = (() => {
     factory() {
       return "";
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json !== null) {
         if (typeof json === "string" || typeof json === "number" || typeof json === "boolean") {
           return String(json);
@@ -3141,7 +3141,7 @@ var hbuf = (() => {
     factory() {
       return new ArrayBuffer(0);
     }
-    fromJson(json) {
+    fromJson(json, target) {
       return json;
     }
     toJson(v) {
@@ -3222,7 +3222,7 @@ var hbuf = (() => {
     factory() {
       return /* @__PURE__ */ new Date(0);
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json != null) {
         if (typeof json === "number" || typeof json === "string") {
           return new Date(Number(json));
@@ -3288,7 +3288,7 @@ var hbuf = (() => {
     factory() {
       return new decimal_default(0);
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json != null) {
         if (typeof json === "string" || typeof json === "number") {
           return new decimal_default(json);
@@ -3377,7 +3377,7 @@ var hbuf = (() => {
     factory() {
       return [];
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (Array.isArray(json)) {
         const list = [];
         for (const item of json) {
@@ -3462,7 +3462,7 @@ var hbuf = (() => {
     factory() {
       return /* @__PURE__ */ new Map();
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json != null) {
         const _json = json;
         const map = /* @__PURE__ */ new Map();
@@ -3548,12 +3548,17 @@ var hbuf = (() => {
       this.extends_ = Array.from(extends_, ([id, f]) => ({ ...f, id })).sort((a, b) => a.id - b.id);
       this.extendMap = extends_;
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json != null) {
-        const ret = this.factory();
+        const ret = target ?? this.factory();
+        const _json = json;
         for (const field of this.fields) {
-          const _json = json;
-          field.set(ret, field.desc.fromJson(_json[field.name]));
+          if (field.name && _json[field.name] !== void 0) {
+            field.set(ret, field.desc.fromJson(_json[field.name]));
+          }
+        }
+        for (const f of this.extends_) {
+          f.desc.fromJson(_json, ret);
         }
         return ret;
       }
@@ -3563,9 +3568,14 @@ var hbuf = (() => {
       if (v == null) {
         return null;
       }
-      const ret = {};
+      let ret = {};
+      for (const [_, field] of this.extendMap) {
+        ret = { ...ret, ...field.desc.toJson(field.get(v)) };
+      }
       for (const field of this.fields) {
-        ret[field.name] = field.desc.toJson(field.get(v));
+        if (field.name) {
+          ret[field.name] = field.desc.toJson(field.get(v));
+        }
       }
       return ret;
     }
@@ -3686,11 +3696,11 @@ var hbuf = (() => {
       }
       return this.desc.toJson(v);
     }
-    fromJson(json) {
+    fromJson(json, target) {
       if (json == null && this.isPtr) {
         return null;
       }
-      return this.desc.fromJson(json);
+      return this.desc.fromJson(json, target);
     }
     zero() {
       return null;
@@ -3730,8 +3740,8 @@ var hbuf = (() => {
     toJson(v) {
       return this.Desc().toJson(v);
     }
-    fromJson(json) {
-      return this.Desc().fromJson(json);
+    fromJson(json, target) {
+      return this.Desc().fromJson(json, target);
     }
     Desc() {
       if (!this.cached) {
@@ -4130,12 +4140,42 @@ var hbuf = (() => {
     return new DataDescriptor(
       () => new WebSocketData(0 /* Request */),
       /* @__PURE__ */ new Map([
-        [1, { name: "type", desc: new Uint8Descriptor(), get: (o) => o.type, set: (o, v) => o.type = v }],
-        [2, { name: "header", desc: new MapDescriptor(new StringDescriptor(), new ListDescriptor(new StringDescriptor()), true), get: (o) => o.header, set: (o, v) => o.header = v }],
-        [3, { name: "id", desc: new Int64Descriptor(true), get: (o) => o.id, set: (o, v) => o.id = v }],
-        [4, { name: "path", desc: new StringDescriptor(true), get: (o) => o.path, set: (o, v) => o.path = v }],
-        [5, { name: "status", desc: new Int32Descriptor(true), get: (o) => o.status, set: (o, v) => o.status = v }],
-        [6, { name: "data", desc: new RefDescriptor(dataDesc, true), get: (o) => o.data, set: (o, v) => o.data = v }]
+        [1, {
+          name: "type",
+          desc: new Uint8Descriptor(),
+          get: (o) => o.type,
+          set: (o, v) => o.type = v
+        }],
+        [2, {
+          name: "header",
+          desc: new MapDescriptor(new StringDescriptor(), new ListDescriptor(new StringDescriptor()), true),
+          get: (o) => o.header,
+          set: (o, v) => o.header = v
+        }],
+        [3, {
+          name: "id",
+          desc: new Int64Descriptor(true),
+          get: (o) => o.id,
+          set: (o, v) => o.id = v
+        }],
+        [4, {
+          name: "path",
+          desc: new StringDescriptor(true),
+          get: (o) => o.path,
+          set: (o, v) => o.path = v
+        }],
+        [5, {
+          name: "status",
+          desc: new Int32Descriptor(true),
+          get: (o) => o.status,
+          set: (o, v) => o.status = v
+        }],
+        [6, {
+          name: "data",
+          desc: new RefDescriptor(dataDesc, true),
+          get: (o) => o.data,
+          set: (o, v) => o.data = v
+        }]
       ])
     );
   }
