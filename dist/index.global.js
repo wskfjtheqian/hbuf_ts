@@ -50,7 +50,6 @@ var hbuf = (() => {
     Server: () => Server,
     ShortBufferError: () => ShortBufferError,
     StringDescriptor: () => StringDescriptor,
-    SyncDescriptor: () => SyncDescriptor,
     TimeDescriptor: () => TimeDescriptor,
     Type: () => Type,
     Uint16Descriptor: () => Uint16Descriptor,
@@ -3683,9 +3682,17 @@ var hbuf = (() => {
     }
   };
   var RefDescriptor = class {
-    constructor(desc, isPtr = false) {
-      this.desc = desc;
+    constructor(getDesc, isPtr = false) {
       this.isPtr = isPtr;
+      this.cache = null;
+      this.getDesc = null;
+      this.getDesc = getDesc;
+    }
+    get desc() {
+      if (this.cache === null) {
+        this.cache = this.getDesc();
+      }
+      return this.cache;
     }
     factory() {
       return this.desc.factory();
@@ -3728,38 +3735,6 @@ var hbuf = (() => {
     }
     decode(r, typ, valRead, valueLen, target) {
       return this.desc.decode(r, typ, valRead, valueLen, this.isPtr ? void 0 : target);
-    }
-  };
-  var SyncDescriptor = class {
-    constructor(f) {
-      this.f = f;
-    }
-    factory() {
-      return this.Desc().factory();
-    }
-    toJson(v) {
-      return this.Desc().toJson(v);
-    }
-    fromJson(json, target) {
-      return this.Desc().fromJson(json, target);
-    }
-    Desc() {
-      if (!this.cached) {
-        this.cached = this.f();
-      }
-      return this.cached;
-    }
-    zero() {
-      return this.Desc().zero();
-    }
-    isEmpty(v) {
-      return this.Desc().isEmpty(v);
-    }
-    encode(buf, v, id) {
-      this.Desc().encode(buf, v, id);
-    }
-    decode(r, typ, valRead, valueLen, target) {
-      return this.Desc().decode(r, typ, valRead, valueLen, target);
     }
   };
 
@@ -3819,7 +3794,7 @@ var hbuf = (() => {
     if (dataDesc) {
       fields.set(3, {
         name: "data",
-        desc: new RefDescriptor(dataDesc, true),
+        desc: new RefDescriptor(() => dataDesc, true),
         get: (o) => o.data,
         set: (o, v) => o.data = v
       });
@@ -4120,6 +4095,9 @@ var hbuf = (() => {
         throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
       }
     }
+    $getChangeField() {
+      return [];
+    }
   };
 
   // src/hrpc/websocket.ts
@@ -4172,7 +4150,7 @@ var hbuf = (() => {
         }],
         [6, {
           name: "data",
-          desc: new RefDescriptor(dataDesc, true),
+          desc: new RefDescriptor(() => dataDesc, true),
           get: (o) => o.data,
           set: (o, v) => o.data = v
         }]
@@ -4384,7 +4362,6 @@ var hbuf = (() => {
     MapDescriptor,
     DataDescriptor,
     RefDescriptor,
-    SyncDescriptor,
     traceId
   };
   return __toCommonJS(index_exports);

@@ -263,28 +263,14 @@ declare class DataDescriptor implements Descriptor {
  * 额外处理 isPtr 语义（可空 data 元素的空标记，与 Go RefDescriptor 一致）。
  */
 declare class RefDescriptor implements Descriptor {
-    private desc;
     private isPtr;
-    constructor(desc: Descriptor, isPtr?: boolean);
+    private cache;
+    private getDesc;
+    constructor(getDesc: () => Descriptor, isPtr?: boolean);
+    get desc(): Descriptor;
     factory(): any;
     toJson(v: any): JsonValue;
     fromJson(json: JsonValue, target?: any): any;
-    zero(): any;
-    isEmpty(v: any): boolean;
-    encode(buf: Writer, v: any, id?: number): void;
-    decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any;
-}
-/**
- * SyncDescriptor：延迟构建描述符（对应 Go 的 sync.Once，JS 单线程直接缓存）。
- */
-declare class SyncDescriptor implements Descriptor {
-    private f;
-    private cached?;
-    constructor(f: () => Descriptor);
-    factory(): any;
-    toJson(v: any): JsonValue;
-    fromJson(json: JsonValue, target?: any): any;
-    Desc(): Descriptor;
     zero(): any;
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
@@ -449,6 +435,7 @@ declare class FetchClient {
     constructor(base: string, option?: HttpClientOption);
     request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>;
     protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
+    $getChangeField(): string[];
 }
 
 declare enum RpcType {
@@ -561,8 +548,7 @@ declare const _default: {
     MapDescriptor: typeof MapDescriptor;
     DataDescriptor: typeof DataDescriptor;
     RefDescriptor: typeof RefDescriptor;
-    SyncDescriptor: typeof SyncDescriptor;
     traceId: typeof traceId;
 };
 
-export { BoolDescriptor, type BufferType, BytesDescriptor, Client, type ClientOption, DataDescriptor, DecimalDescriptor, type Decoder, type Descriptor, DoubleDescriptor, type Encoder, Error$1 as Error, FetchClient, type FieldDesc, FloatDescriptor, HBufError, type HData, type Handler, type HandlerMiddleware, HttpClient, Int16Descriptor, Int32Descriptor, Int64Descriptor, Int8Descriptor, ListDescriptor, MapDescriptor, Marshal, type Method, NewHBufDecoder, NewHBufEncode, NewJsonDecoder, NewJsonEncode, type Option, Reader, RecordEntry, RefDescriptor, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, ShortBufferError, StringDescriptor, SyncDescriptor, TimeDescriptor, Type, Uint16Descriptor, Uint32Descriptor, Uint64Descriptor, Uint8Descriptor, Unmarshal, WebSocketClient, type WebSocketClientOption, WebSocketData, Writer, convertArray, convertRecord, _default as default, formatDate, isArray, isData, isHData, isRecord, traceId, waiting };
+export { BoolDescriptor, type BufferType, BytesDescriptor, Client, type ClientOption, DataDescriptor, DecimalDescriptor, type Decoder, type Descriptor, DoubleDescriptor, type Encoder, Error$1 as Error, FetchClient, type FieldDesc, FloatDescriptor, HBufError, type HData, type Handler, type HandlerMiddleware, HttpClient, Int16Descriptor, Int32Descriptor, Int64Descriptor, Int8Descriptor, ListDescriptor, MapDescriptor, Marshal, type Method, NewHBufDecoder, NewHBufEncode, NewJsonDecoder, NewJsonEncode, type Option, Reader, RecordEntry, RefDescriptor, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, ShortBufferError, StringDescriptor, TimeDescriptor, Type, Uint16Descriptor, Uint32Descriptor, Uint64Descriptor, Uint8Descriptor, Unmarshal, WebSocketClient, type WebSocketClientOption, WebSocketData, Writer, convertArray, convertRecord, _default as default, formatDate, isArray, isData, isHData, isRecord, traceId, waiting };

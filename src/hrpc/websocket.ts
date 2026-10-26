@@ -98,7 +98,7 @@ function webSocketDataDesc(dataDesc: Descriptor): DataDescriptor {
             }],
             [6, {
                 name: "data",
-                desc: new RefDescriptor(dataDesc, true),
+                desc: new RefDescriptor(() => dataDesc, true),
                 get: (o: WebSocketData) => o.data,
                 set: (o: WebSocketData, v: any) => o.data = v
             }],

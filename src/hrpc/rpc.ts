@@ -113,7 +113,7 @@ export function NewResultDesc(dataDesc?: Descriptor): DataDescriptor {
     if (dataDesc) {
         fields.set(3, {
             name: "data",
-            desc: new RefDescriptor(dataDesc, true),
+                desc: new RefDescriptor(() => dataDesc, true),
             get: (o: Result) => o.data,
             set: (o: Result, v: any) => o.data = v
         })

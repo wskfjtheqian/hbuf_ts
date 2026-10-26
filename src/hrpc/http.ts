@@ -91,4 +91,8 @@ export class FetchClient {
             throw new Error(`HTTP Error: ${res.status} ${res.statusText}`)
         }
     }
+
+    public $getChangeField():string[]{
+        return []
+    }
 }

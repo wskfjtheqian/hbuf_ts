@@ -1386,7 +1386,18 @@ export class DataDescriptor implements Descriptor {
  * 额外处理 isPtr 语义（可空 data 元素的空标记，与 Go RefDescriptor 一致）。
  */
 export class RefDescriptor implements Descriptor {
-    constructor(private desc: Descriptor, private isPtr = false) {
+    private cache: Descriptor | null = null
+    private getDesc: (() => Descriptor) | null = null
+
+    constructor(getDesc: () => Descriptor, private isPtr = false) {
+        this.getDesc = getDesc
+    }
+
+    get desc(): Descriptor {
+        if (this.cache === null) {
+            this.cache = this.getDesc!()
+        }
+        return this.cache
     }
 
     factory(): any {
@@ -1438,50 +1449,5 @@ export class RefDescriptor implements Descriptor {
     public decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any {
         // isPtr 时不复用 target：与 Go 一致每次解码分配新实例
         return this.desc.decode(r, typ, valRead, valueLen, this.isPtr ? undefined : target)
-    }
-}
-
-/**
- * SyncDescriptor：延迟构建描述符（对应 Go 的 sync.Once，JS 单线程直接缓存）。
- */
-export class SyncDescriptor implements Descriptor {
-    private cached?: Descriptor
-
-    constructor(private f: () => Descriptor) {
-    }
-
-    factory(): any {
-        return this.Desc().factory()
-    }
-
-    public toJson(v: any): JsonValue {
-        return this.Desc().toJson(v)
-    }
-
-    public fromJson(json: JsonValue, target?: any): any {
-        return this.Desc().fromJson(json, target)
-    }
-
-    public Desc(): Descriptor {
-        if (!this.cached) {
-            this.cached = this.f()
-        }
-        return this.cached
-    }
-
-    public zero(): any {
-        return this.Desc().zero()
-    }
-
-    public isEmpty(v: any): boolean {
-        return this.Desc().isEmpty(v)
-    }
-
-    public encode(buf: Writer, v: any, id?: number): void {
-        this.Desc().encode(buf, v, id)
-    }
-
-    public decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any {
-        return this.Desc().decode(r, typ, valRead, valueLen, target)
     }
 }

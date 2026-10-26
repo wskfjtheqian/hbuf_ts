@@ -25,7 +25,6 @@ import {
     MapDescriptor,
     RefDescriptor,
     StringDescriptor,
-    SyncDescriptor,
     TimeDescriptor,
     Uint8Descriptor,
     Uint16Descriptor,
@@ -85,7 +84,6 @@ export {
     MapDescriptor,
     DataDescriptor,
     RefDescriptor,
-    SyncDescriptor,
 };
 
 export default {
@@ -128,7 +126,6 @@ export default {
     MapDescriptor,
     DataDescriptor,
     RefDescriptor,
-    SyncDescriptor,
     traceId,
 }
 

@@ -16,7 +16,6 @@ import {
     MapDescriptor,
     RefDescriptor,
     StringDescriptor,
-    SyncDescriptor,
     TimeDescriptor,
     Uint8Descriptor,
     Uint64Descriptor,
@@ -75,8 +74,8 @@ const jDataDesc = new DataDescriptor(
         [9, {name: "f9", desc: new BytesDescriptor(), get: (o: JDataTs) => o.f9, set: (o: JDataTs, v) => o.f9 = v}],
         [10, {name: "f10", desc: new ListDescriptor(new Int64Descriptor()), get: (o: JDataTs) => o.f10, set: (o: JDataTs, v) => o.f10 = v}],
         [11, {name: "f11", desc: new MapDescriptor(new StringDescriptor(), new StringDescriptor()), get: (o: JDataTs) => o.f11, set: (o: JDataTs, v) => o.f11 = v}],
-        [12, {name: "f12", desc: new RefDescriptor(jSubDesc), get: (o: JDataTs) => o.f12, set: (o: JDataTs, v) => o.f12 = v}],
-        [13, {name: "f13", desc: new RefDescriptor(jSubDesc, true), get: (o: JDataTs) => o.f13, set: (o: JDataTs, v) => o.f13 = v}],
+        [12, {name: "f12", desc: new RefDescriptor(()=>jSubDesc), get: (o: JDataTs) => o.f12, set: (o: JDataTs, v) => o.f12 = v}],
+        [13, {name: "f13", desc: new RefDescriptor(()=>jSubDesc, true), get: (o: JDataTs) => o.f13, set: (o: JDataTs, v) => o.f13 = v}],
     ]),
 )
 
@@ -256,13 +255,13 @@ test("toJson/fromJson: null 容器与 null 引用", () => {
 })
 
 test("toJson/fromJson: 递归结构（SyncDescriptor）", () => {
-    const nodeDesc: Descriptor = new SyncDescriptor(() => new DataDescriptor(
+    const nodeDesc: Descriptor =  new DataDescriptor(
         () => new NodeTs(),
         new Map<number, FieldDesc>([
             [1, {name: "name", desc: new StringDescriptor(), get: (o: NodeTs) => o.name, set: (o: NodeTs, v) => o.name = v}],
             [2, {name: "children", desc: new ListDescriptor(new RefDescriptor(nodeDesc, true)), get: (o: NodeTs) => o.children, set: (o: NodeTs, v) => o.children = v}],
         ]),
-    ))
+    )
 
     class NodeTs implements HData {
         name: string = ""
