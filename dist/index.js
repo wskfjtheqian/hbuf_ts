@@ -335,6 +335,9 @@ var IntBase = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
   }
+  clone(val, target) {
+    return val;
+  }
   /** 元素零值空标记的 idLen（uint8 特例为 2）。 */
   emptyIdLen() {
     return 0;
@@ -613,6 +616,9 @@ var FloatBase = class {
     this.isPtr = isPtr;
     this.isDouble = isDouble;
   }
+  clone(val, target) {
+    return val;
+  }
   factory() {
     return 0;
   }
@@ -721,6 +727,9 @@ var BoolDescriptor = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
   }
+  clone(val, target) {
+    return val;
+  }
   factory() {
     return false;
   }
@@ -798,6 +807,9 @@ var BoolDescriptor = class {
 var StringDescriptor = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
+  }
+  clone(val, target) {
+    return val;
   }
   factory() {
     return "";
@@ -887,6 +899,9 @@ var BytesDescriptor = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
   }
+  clone(val, target) {
+    return val;
+  }
   factory() {
     return new ArrayBuffer(0);
   }
@@ -968,6 +983,9 @@ var TimeDescriptor = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
   }
+  clone(val, target) {
+    return val;
+  }
   factory() {
     return /* @__PURE__ */ new Date(0);
   }
@@ -980,7 +998,7 @@ var TimeDescriptor = class {
     return null;
   }
   toJson(v) {
-    return v == null ? null : v.getTime();
+    return v == null ? null : String(v.getTime());
   }
   zero() {
     return null;
@@ -1033,6 +1051,9 @@ function DecimalToStr(v) {
 var DecimalDescriptor = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
+  }
+  clone(val, target) {
+    return val;
   }
   factory() {
     return new Decimal(0);
@@ -1123,6 +1144,16 @@ var ListDescriptor = class {
     this.desc = desc;
     this.isPtr = isPtr;
   }
+  clone(v, target) {
+    if (v == null) {
+      return null;
+    }
+    const list = [];
+    for (const item of v) {
+      list.push(this.desc.clone(item));
+    }
+    return list;
+  }
   factory() {
     return [];
   }
@@ -1207,6 +1238,16 @@ var MapDescriptor = class {
     this.keyDesc = keyDesc;
     this.valueDesc = valueDesc;
     this.isPtr = isPtr;
+  }
+  clone(val, target) {
+    if (val == null) {
+      return null;
+    }
+    const map = /* @__PURE__ */ new Map();
+    for (const [k, v] of val) {
+      map.set(this.keyDesc.clone(k), this.valueDesc.clone(v));
+    }
+    return map;
   }
   factory() {
     return /* @__PURE__ */ new Map();
@@ -1297,12 +1338,25 @@ var DataDescriptor = class {
     this.extends_ = Array.from(extends_, ([id, f]) => ({ ...f, id })).sort((a, b) => a.id - b.id);
     this.extendMap = extends_;
   }
+  clone(val, target) {
+    if (val == null) {
+      return null;
+    }
+    const ret = target ?? this.factory();
+    for (const field of this.fields) {
+      field.set(ret, field.desc.clone(field.get(val)));
+    }
+    for (const f of this.extends_) {
+      f.set(ret, f.desc.clone(f.get(val), ret));
+    }
+    return ret;
+  }
   fromJson(json, target) {
     if (json != null) {
       const ret = target ?? this.factory();
       const _json = json;
       for (const field of this.fields) {
-        if (field.name && _json[field.name] !== void 0) {
+        if (field.name) {
           field.set(ret, field.desc.fromJson(_json[field.name]));
         }
       }
@@ -1438,6 +1492,9 @@ var RefDescriptor = class {
     this.getDesc = null;
     this.getDesc = getDesc;
   }
+  clone(val, target) {
+    return this.desc.clone(val, target);
+  }
   get desc() {
     if (this.cache === null) {
       this.cache = this.getDesc();
@@ -1557,6 +1614,9 @@ function NewResultDesc(dataDesc) {
 var JsonDescriptor = class {
   constructor(isPtr = false) {
     this.isPtr = isPtr;
+  }
+  clone(val, target) {
+    return val;
   }
   factory() {
     return null;

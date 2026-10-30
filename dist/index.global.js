@@ -2585,6 +2585,9 @@ var hbuf = (() => {
     constructor(isPtr = false) {
       this.isPtr = isPtr;
     }
+    clone(val, target) {
+      return val;
+    }
     /** 元素零值空标记的 idLen（uint8 特例为 2）。 */
     emptyIdLen() {
       return 0;
@@ -2863,6 +2866,9 @@ var hbuf = (() => {
       this.isPtr = isPtr;
       this.isDouble = isDouble;
     }
+    clone(val, target) {
+      return val;
+    }
     factory() {
       return 0;
     }
@@ -2971,6 +2977,9 @@ var hbuf = (() => {
     constructor(isPtr = false) {
       this.isPtr = isPtr;
     }
+    clone(val, target) {
+      return val;
+    }
     factory() {
       return false;
     }
@@ -3048,6 +3057,9 @@ var hbuf = (() => {
   var StringDescriptor = class {
     constructor(isPtr = false) {
       this.isPtr = isPtr;
+    }
+    clone(val, target) {
+      return val;
     }
     factory() {
       return "";
@@ -3137,6 +3149,9 @@ var hbuf = (() => {
     constructor(isPtr = false) {
       this.isPtr = isPtr;
     }
+    clone(val, target) {
+      return val;
+    }
     factory() {
       return new ArrayBuffer(0);
     }
@@ -3218,6 +3233,9 @@ var hbuf = (() => {
     constructor(isPtr = false) {
       this.isPtr = isPtr;
     }
+    clone(val, target) {
+      return val;
+    }
     factory() {
       return /* @__PURE__ */ new Date(0);
     }
@@ -3230,7 +3248,7 @@ var hbuf = (() => {
       return null;
     }
     toJson(v) {
-      return v == null ? null : v.getTime();
+      return v == null ? null : String(v.getTime());
     }
     zero() {
       return null;
@@ -3283,6 +3301,9 @@ var hbuf = (() => {
   var DecimalDescriptor = class {
     constructor(isPtr = false) {
       this.isPtr = isPtr;
+    }
+    clone(val, target) {
+      return val;
     }
     factory() {
       return new decimal_default(0);
@@ -3373,6 +3394,16 @@ var hbuf = (() => {
       this.desc = desc;
       this.isPtr = isPtr;
     }
+    clone(v, target) {
+      if (v == null) {
+        return null;
+      }
+      const list = [];
+      for (const item of v) {
+        list.push(this.desc.clone(item));
+      }
+      return list;
+    }
     factory() {
       return [];
     }
@@ -3457,6 +3488,16 @@ var hbuf = (() => {
       this.keyDesc = keyDesc;
       this.valueDesc = valueDesc;
       this.isPtr = isPtr;
+    }
+    clone(val, target) {
+      if (val == null) {
+        return null;
+      }
+      const map = /* @__PURE__ */ new Map();
+      for (const [k, v] of val) {
+        map.set(this.keyDesc.clone(k), this.valueDesc.clone(v));
+      }
+      return map;
     }
     factory() {
       return /* @__PURE__ */ new Map();
@@ -3547,12 +3588,25 @@ var hbuf = (() => {
       this.extends_ = Array.from(extends_, ([id, f]) => ({ ...f, id })).sort((a, b) => a.id - b.id);
       this.extendMap = extends_;
     }
+    clone(val, target) {
+      if (val == null) {
+        return null;
+      }
+      const ret = target ?? this.factory();
+      for (const field of this.fields) {
+        field.set(ret, field.desc.clone(field.get(val)));
+      }
+      for (const f of this.extends_) {
+        f.set(ret, f.desc.clone(f.get(val), ret));
+      }
+      return ret;
+    }
     fromJson(json, target) {
       if (json != null) {
         const ret = target ?? this.factory();
         const _json = json;
         for (const field of this.fields) {
-          if (field.name && _json[field.name] !== void 0) {
+          if (field.name) {
             field.set(ret, field.desc.fromJson(_json[field.name]));
           }
         }
@@ -3688,6 +3742,9 @@ var hbuf = (() => {
       this.getDesc = null;
       this.getDesc = getDesc;
     }
+    clone(val, target) {
+      return this.desc.clone(val, target);
+    }
     get desc() {
       if (this.cache === null) {
         this.cache = this.getDesc();
@@ -3807,6 +3864,9 @@ var hbuf = (() => {
   var JsonDescriptor = class {
     constructor(isPtr = false) {
       this.isPtr = isPtr;
+    }
+    clone(val, target) {
+      return val;
     }
     factory() {
       return null;

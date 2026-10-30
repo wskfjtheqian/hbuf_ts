@@ -20,11 +20,13 @@ interface Descriptor {
     decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any;
     toJson(v: any): JsonValue;
     fromJson(json: JsonValue, target?: any): any;
+    clone(val?: any, target?: any): any;
 }
 /** 数值基类（int / uint 系） */
 declare abstract class IntBase implements Descriptor {
     protected isPtr: boolean;
     protected constructor(isPtr?: boolean);
+    clone(val?: any, target?: any): any;
     abstract factory(): any;
     abstract fromJson(json: JsonValue, target?: any): any;
     abstract toJson(v: any): JsonValue;
@@ -126,6 +128,7 @@ declare abstract class FloatBase implements Descriptor {
     protected isPtr: boolean;
     private isDouble;
     protected constructor(isPtr: boolean | undefined, isDouble: boolean);
+    clone(val?: any, target?: any): any;
     factory(): any;
     fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
@@ -150,6 +153,7 @@ declare class DoubleDescriptor extends FloatBase {
 declare class BoolDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
+    clone(val?: any, target?: any): any;
     factory(): boolean;
     fromJson(json: JsonValue, target?: any): boolean | null;
     toJson(v: any): JsonValue;
@@ -162,6 +166,7 @@ declare class BoolDescriptor implements Descriptor {
 declare class StringDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
+    clone(val?: any, target?: any): any;
     factory(): string;
     fromJson(json: JsonValue, target?: any): string | null;
     toJson(v: any): JsonValue;
@@ -174,6 +179,7 @@ declare class StringDescriptor implements Descriptor {
 declare class BytesDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
+    clone(val?: any, target?: any): any;
     factory(): ArrayBuffer;
     fromJson(json: JsonValue, target?: any): JsonValue;
     toJson(v: any): JsonValue;
@@ -186,6 +192,7 @@ declare class BytesDescriptor implements Descriptor {
 declare class TimeDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
+    clone(val?: any, target?: any): any;
     factory(): Date;
     fromJson(json: JsonValue, target?: any): Date | null;
     toJson(v: any): JsonValue;
@@ -198,6 +205,7 @@ declare class TimeDescriptor implements Descriptor {
 declare class DecimalDescriptor implements Descriptor {
     private isPtr;
     constructor(isPtr?: boolean);
+    clone(val?: any, target?: any): any;
     factory(): any;
     fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
@@ -211,6 +219,7 @@ declare class ListDescriptor implements Descriptor {
     private desc;
     private isPtr;
     constructor(desc: Descriptor, isPtr?: boolean);
+    clone(v?: any, target?: any): any;
     factory(): any;
     fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
@@ -225,6 +234,7 @@ declare class MapDescriptor implements Descriptor {
     private valueDesc;
     private isPtr;
     constructor(keyDesc: Descriptor, valueDesc: Descriptor, isPtr?: boolean);
+    clone(val?: any, target?: any): any;
     factory(): any;
     fromJson(json: JsonValue, target?: any): any;
     toJson(val: any): JsonValue;
@@ -251,6 +261,7 @@ declare class DataDescriptor implements Descriptor {
     private extendMap;
     private isPtr;
     constructor(factory: () => any, fields: Map<number, FieldDesc>, extends_?: Map<number, FieldDesc>, isPtr?: boolean);
+    clone(val?: any, target?: any): any;
     fromJson(json: JsonValue, target?: any): any;
     toJson(v: any): JsonValue;
     zero(): any;
@@ -267,6 +278,7 @@ declare class RefDescriptor implements Descriptor {
     private cache;
     private getDesc;
     constructor(getDesc: () => Descriptor, isPtr?: boolean);
+    clone(val?: any, target?: any): any;
     get desc(): Descriptor;
     factory(): any;
     toJson(v: any): JsonValue;

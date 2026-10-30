@@ -87,8 +87,8 @@ const gDataDesc: DataDescriptor = new DataDescriptor(
             get: (o: GDataTs) => o.f11,
             set: (o: GDataTs, v) => o.f11 = v
         }],
-        [12, {name: "f12", desc: new RefDescriptor(gSubDesc), get: (o: GDataTs) => o.f12, set: (o: GDataTs, v) => o.f12 = v}],
-        [13, {name: "f13", desc: new RefDescriptor(gSubDesc), get: (o: GDataTs) => o.f13, set: (o: GDataTs, v) => o.f13 = v}],
+        [12, {name: "f12", desc: new RefDescriptor(() => gSubDesc), get: (o: GDataTs) => o.f12, set: (o: GDataTs, v) => o.f12 = v}],
+        [13, {name: "f13", desc: new RefDescriptor(() => gSubDesc), get: (o: GDataTs) => o.f13, set: (o: GDataTs, v) => o.f13 = v}],
         [14, {
             name: "f14",
             desc: new ListDescriptor(new Int64Descriptor(true)),

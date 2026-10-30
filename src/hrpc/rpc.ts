@@ -132,6 +132,10 @@ export class JsonDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
+    clone(val?: any, target?: any):any {
+        return val
+    }
+
     factory(): any {
         return null
     }

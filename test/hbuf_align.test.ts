@@ -60,11 +60,11 @@ const alignDesc: Descriptor = new DataDescriptor(
     new Map<number, FieldDesc>([
         [4, {name: "v4", desc: new ListDescriptor(new Int16Descriptor(false), true), get: (o: AlignTs) => o.v4, set: (o: AlignTs, v) => o.v4 = v}],
         [5, {name: "v5", desc: new MapDescriptor(new Int64Descriptor(false), new Int16Descriptor(false), true), get: (o: AlignTs) => o.v5, set: (o: AlignTs, v) => o.v5 = v}],
-        [31, {name: "v31", desc: new RefDescriptor(alignSubDesc, false), get: (o: AlignTs) => o.v31, set: (o: AlignTs, v) => o.v31 = v}],
-        [32, {name: "v32", desc: new RefDescriptor(alignSubDesc, true), get: (o: AlignTs) => o.v32, set: (o: AlignTs, v) => o.v32 = v}],
+        [31, {name: "v31", desc: new RefDescriptor(() => alignSubDesc, false), get: (o: AlignTs) => o.v31, set: (o: AlignTs, v) => o.v31 = v}],
+        [32, {name: "v32", desc: new RefDescriptor(() => alignSubDesc, true), get: (o: AlignTs) => o.v32, set: (o: AlignTs, v) => o.v32 = v}],
         [53, {name: "v53", desc: new ListDescriptor(new BytesDescriptor(false), false), get: (o: AlignTs) => o.v53, set: (o: AlignTs, v) => o.v53 = v}],
-        [63, {name: "v63", desc: new ListDescriptor(new RefDescriptor(alignSubDesc, false), false), get: (o: AlignTs) => o.v63, set: (o: AlignTs, v) => o.v63 = v}],
-        [64, {name: "v64", desc: new ListDescriptor(new RefDescriptor(alignSubDesc, true), false), get: (o: AlignTs) => o.v64, set: (o: AlignTs, v) => o.v64 = v}],
+        [63, {name: "v63", desc: new ListDescriptor(new RefDescriptor(() => alignSubDesc, false), false), get: (o: AlignTs) => o.v63, set: (o: AlignTs, v) => o.v63 = v}],
+        [64, {name: "v64", desc: new ListDescriptor(new RefDescriptor(() => alignSubDesc, true), false), get: (o: AlignTs) => o.v64, set: (o: AlignTs, v) => o.v64 = v}],
     ]),
 )
 

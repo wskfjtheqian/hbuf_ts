@@ -259,7 +259,7 @@ test("toJson/fromJson: 递归结构（SyncDescriptor）", () => {
         () => new NodeTs(),
         new Map<number, FieldDesc>([
             [1, {name: "name", desc: new StringDescriptor(), get: (o: NodeTs) => o.name, set: (o: NodeTs, v) => o.name = v}],
-            [2, {name: "children", desc: new ListDescriptor(new RefDescriptor(nodeDesc, true)), get: (o: NodeTs) => o.children, set: (o: NodeTs, v) => o.children = v}],
+            [2, {name: "children", desc: new ListDescriptor(new RefDescriptor(() => nodeDesc, true)), get: (o: NodeTs) => o.children, set: (o: NodeTs, v) => o.children = v}],
         ]),
     )
 

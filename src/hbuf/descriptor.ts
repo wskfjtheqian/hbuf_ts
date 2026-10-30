@@ -80,11 +80,17 @@ export interface Descriptor {
     toJson(v: any): JsonValue
 
     fromJson(json: JsonValue, target?: any): any
+
+    clone(val?: any, target?: any): any
 }
 
 /** 数值基类（int / uint 系） */
 abstract class IntBase implements Descriptor {
     protected constructor(protected isPtr = false) {
+    }
+
+    clone(val?: any, target?: any): any {
+        return val
     }
 
     public abstract factory(): any
@@ -440,6 +446,10 @@ abstract class FloatBase implements Descriptor {
     protected constructor(protected isPtr = false, private isDouble: boolean) {
     }
 
+    clone(val?: any, target?: any): any {
+        return val
+    }
+
     factory(): any {
         return 0
     }
@@ -568,6 +578,10 @@ export class BoolDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
+    clone(val?: any, target?: any): any {
+        return val
+    }
+
     factory(): boolean {
         return false
     }
@@ -654,6 +668,10 @@ export class BoolDescriptor implements Descriptor {
 /** String：UTF-8 编码为 TBytes。 */
 export class StringDescriptor implements Descriptor {
     constructor(private isPtr = false) {
+    }
+
+    clone(val?: any, target?: any): any {
+        return val
     }
 
     factory(): string {
@@ -754,6 +772,10 @@ export class BytesDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
+    clone(val?: any, target?: any): any {
+        return val
+    }
+
     factory(): ArrayBuffer {
         return new ArrayBuffer(0)
     }
@@ -845,6 +867,10 @@ export class TimeDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
+    clone(val?: any, target?: any): any {
+        return val
+    }
+
     factory(): Date {
         return new Date(0)
     }
@@ -860,7 +886,7 @@ export class TimeDescriptor implements Descriptor {
     }
 
     public toJson(v: any): JsonValue {
-        return v == null ? null : (v as Date).getTime()
+        return v == null ? null : String((v as Date).getTime())
     }
 
     public zero(): any {
@@ -920,6 +946,10 @@ function DecimalToStr(v: any): string {
 /** Decimal：以 decimal.js Decimal 承载（wire 上为十进制文本）。 */
 export class DecimalDescriptor implements Descriptor {
     constructor(private isPtr = false) {
+    }
+
+    clone(val?: any, target?: any): any {
+        return val
     }
 
     factory(): any {
@@ -1020,6 +1050,17 @@ export class ListDescriptor implements Descriptor {
     constructor(private desc: Descriptor, private isPtr = false) {
     }
 
+    clone(v?: any, target?: any): any {
+        if (v == null) {
+            return null
+        }
+        const list: any[] = []
+        for (const item of v) {
+            list.push(this.desc.clone(item))
+        }
+        return list
+    }
+
     factory(): any {
         return []
     }
@@ -1111,6 +1152,17 @@ export class ListDescriptor implements Descriptor {
 /** Map：key/value 均按「元素」规则编码。 */
 export class MapDescriptor implements Descriptor {
     constructor(private keyDesc: Descriptor, private valueDesc: Descriptor, private isPtr = false) {
+    }
+
+    clone(val?: any, target?: any): any {
+        if (val == null) {
+            return null
+        }
+        const map: Map<any, any> = new Map()
+        for (const [k, v] of val) {
+            map.set(this.keyDesc.clone(k), this.valueDesc.clone(v))
+        }
+        return map
     }
 
     factory(): any {
@@ -1231,12 +1283,27 @@ export class DataDescriptor implements Descriptor {
         this.extendMap = extends_
     }
 
+    clone(val?: any, target?: any): any {
+        if (val == null) {
+            return null
+        }
+        const ret: any = target ?? this.factory()
+        for (const field of this.fields) {
+            field.set(ret, field.desc.clone(field.get(val)))
+        }
+        for (const f of this.extends_) {
+            f.set(ret, f.desc.clone(f.get(val), ret))
+        }
+        return ret
+    }
+
+
     public fromJson(json: JsonValue, target?: any): any {
         if (json != null) {
             const ret: any = target ?? this.factory()
             const _json = json as Record<string, JsonValue>
             for (const field of this.fields) {
-                if (field.name && _json[field.name] !== undefined) {
+                if (field.name) {
                     field.set(ret, field.desc.fromJson(_json[field.name]))
                 }
             }
@@ -1391,6 +1458,10 @@ export class RefDescriptor implements Descriptor {
 
     constructor(getDesc: () => Descriptor, private isPtr = false) {
         this.getDesc = getDesc
+    }
+
+    clone(val?: any, target?: any): any {
+        return this.desc.clone(val, target)
     }
 
     get desc(): Descriptor {
