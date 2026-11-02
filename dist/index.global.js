@@ -3579,6 +3579,65 @@ var hbuf = (() => {
       return m;
     }
   };
+  var RefDescriptor = class {
+    constructor(getDesc, isPtr = false) {
+      this.isPtr = isPtr;
+      this.cache = null;
+      this.getDesc = null;
+      this.getDesc = getDesc;
+    }
+    clone(val, target) {
+      return this.desc.clone(val, target);
+    }
+    get desc() {
+      if (this.cache === null) {
+        this.cache = this.getDesc();
+      }
+      return this.cache;
+    }
+    factory() {
+      return this.desc.factory();
+    }
+    toJson(v) {
+      if (v == null) {
+        return null;
+      }
+      return this.desc.toJson(v);
+    }
+    fromJson(json, target) {
+      if (json == null && this.isPtr) {
+        return null;
+      }
+      return this.desc.fromJson(json, target);
+    }
+    zero() {
+      return null;
+    }
+    isEmpty(v) {
+      return v == null;
+    }
+    encode(buf, v, id) {
+      if (id !== void 0) {
+        if (v == null) {
+          return;
+        }
+        this.desc.encode(buf, v, id);
+      } else {
+        if (v == null) {
+          if (this.isPtr) {
+            WriterType(buf, 7 /* TData */, 0, 1);
+          } else {
+            this.desc.encode(buf, null, void 0);
+          }
+          return;
+        }
+        this.desc.encode(buf, v, void 0);
+      }
+    }
+    decode(r, typ, valRead, valueLen, target) {
+      return this.desc.decode(r, typ, valRead, valueLen, this.isPtr ? void 0 : target);
+    }
+  };
   var DataDescriptor = class {
     constructor(factory, fields, extends_ = /* @__PURE__ */ new Map(), isPtr = false) {
       this.factory = factory;
@@ -3734,64 +3793,17 @@ var hbuf = (() => {
       }
       return v;
     }
-  };
-  var RefDescriptor = class {
-    constructor(getDesc, isPtr = false) {
-      this.isPtr = isPtr;
-      this.cache = null;
-      this.getDesc = null;
-      this.getDesc = getDesc;
+    convertField(name) {
+      return name.replace(/([A-Z])/g, (match) => `_${match.toLowerCase()}`);
     }
-    clone(val, target) {
-      return this.desc.clone(val, target);
-    }
-    get desc() {
-      if (this.cache === null) {
-        this.cache = this.getDesc();
-      }
-      return this.cache;
-    }
-    factory() {
-      return this.desc.factory();
-    }
-    toJson(v) {
-      if (v == null) {
-        return null;
-      }
-      return this.desc.toJson(v);
-    }
-    fromJson(json, target) {
-      if (json == null && this.isPtr) {
-        return null;
-      }
-      return this.desc.fromJson(json, target);
-    }
-    zero() {
-      return null;
-    }
-    isEmpty(v) {
-      return v == null;
-    }
-    encode(buf, v, id) {
-      if (id !== void 0) {
-        if (v == null) {
-          return;
+    getChangeField(src, target, ignore, changes) {
+      changes = changes ? changes : [];
+      for (const field of this.fields) {
+        if (field.get(src) !== field.get(target)) {
+          changes.push(field.name || "");
         }
-        this.desc.encode(buf, v, id);
-      } else {
-        if (v == null) {
-          if (this.isPtr) {
-            WriterType(buf, 7 /* TData */, 0, 1);
-          } else {
-            this.desc.encode(buf, null, void 0);
-          }
-          return;
-        }
-        this.desc.encode(buf, v, void 0);
       }
-    }
-    decode(r, typ, valRead, valueLen, target) {
-      return this.desc.decode(r, typ, valRead, valueLen, this.isPtr ? void 0 : target);
+      return changes;
     }
   };
 

@@ -243,6 +243,25 @@ declare class MapDescriptor implements Descriptor {
     encode(buf: Writer, v: any, id?: number): void;
     decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any;
 }
+/**
+ * RefDescriptor：包装引用（递归结构）。TS 无 unsafe 偏移，透传目标描述符，
+ * 额外处理 isPtr 语义（可空 data 元素的空标记，与 Go RefDescriptor 一致）。
+ */
+declare class RefDescriptor implements Descriptor {
+    private isPtr;
+    private cache;
+    private getDesc;
+    constructor(getDesc: () => Descriptor, isPtr?: boolean);
+    clone(val?: any, target?: any): any;
+    get desc(): Descriptor;
+    factory(): any;
+    toJson(v: any): JsonValue;
+    fromJson(json: JsonValue, target?: any): any;
+    zero(): any;
+    isEmpty(v: any): boolean;
+    encode(buf: Writer, v: any, id?: number): void;
+    decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any;
+}
 /** 字段描述：描述符 + get/set 闭包（替代 Go 的 unsafe.Offsetof）。 */
 type FieldDesc = {
     desc: Descriptor;
@@ -268,25 +287,8 @@ declare class DataDescriptor implements Descriptor {
     isEmpty(v: any): boolean;
     encode(buf: Writer, v: any, id?: number): void;
     decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any;
-}
-/**
- * RefDescriptor：包装引用（递归结构）。TS 无 unsafe 偏移，透传目标描述符，
- * 额外处理 isPtr 语义（可空 data 元素的空标记，与 Go RefDescriptor 一致）。
- */
-declare class RefDescriptor implements Descriptor {
-    private isPtr;
-    private cache;
-    private getDesc;
-    constructor(getDesc: () => Descriptor, isPtr?: boolean);
-    clone(val?: any, target?: any): any;
-    get desc(): Descriptor;
-    factory(): any;
-    toJson(v: any): JsonValue;
-    fromJson(json: JsonValue, target?: any): any;
-    zero(): any;
-    isEmpty(v: any): boolean;
-    encode(buf: Writer, v: any, id?: number): void;
-    decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any;
+    convertField(name: string): string;
+    getChangeField(src: any, target: any, ignore: string[], changes?: string[]): any;
 }
 
 type JsonValue = string | number | boolean | null | undefined | JsonValue[] | {

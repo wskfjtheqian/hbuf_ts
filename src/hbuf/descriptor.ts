@@ -1253,6 +1253,82 @@ export class MapDescriptor implements Descriptor {
     }
 }
 
+
+/**
+ * RefDescriptor：包装引用（递归结构）。TS 无 unsafe 偏移，透传目标描述符，
+ * 额外处理 isPtr 语义（可空 data 元素的空标记，与 Go RefDescriptor 一致）。
+ */
+export class RefDescriptor implements Descriptor {
+    private cache: Descriptor | null = null
+    private getDesc: (() => Descriptor) | null = null
+
+    constructor(getDesc: () => Descriptor, private isPtr = false) {
+        this.getDesc = getDesc
+    }
+
+    clone(val?: any, target?: any): any {
+        return this.desc.clone(val, target)
+    }
+
+    get desc(): Descriptor {
+        if (this.cache === null) {
+            this.cache = this.getDesc!()
+        }
+        return this.cache
+    }
+
+    factory(): any {
+        return this.desc.factory()
+    }
+
+    public toJson(v: any): JsonValue {
+        if (v == null) {
+            return null
+        }
+        return this.desc.toJson(v)
+    }
+
+    public fromJson(json: JsonValue, target?: any) {
+        if (json == null && this.isPtr) {
+            return null
+        }
+        return this.desc.fromJson(json, target)
+    }
+
+    public zero(): any {
+        return null
+    }
+
+    public isEmpty(v: any): boolean {
+        return v == null
+    }
+
+    public encode(buf: Writer, v: any, id?: number): void {
+        if (id !== undefined) {
+            if (v == null) {
+                return
+            }
+            this.desc.encode(buf, v, id)
+        } else {
+            if (v == null) {
+                if (this.isPtr) {
+                    WriterType(buf, Type.TData, 0, 1)
+                } else {
+                    // 与 Go 一致：值元素（非指针）零值写 3 字节空结构
+                    this.desc.encode(buf, null, undefined)
+                }
+                return
+            }
+            this.desc.encode(buf, v, undefined)
+        }
+    }
+
+    public decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any {
+        // isPtr 时不复用 target：与 Go 一致每次解码分配新实例
+        return this.desc.decode(r, typ, valRead, valueLen, this.isPtr ? undefined : target)
+    }
+}
+
 /** 字段描述：描述符 + get/set 闭包（替代 Go 的 unsafe.Offsetof）。 */
 export type FieldDesc = {
     desc: Descriptor
@@ -1445,80 +1521,75 @@ export class DataDescriptor implements Descriptor {
         return v
     }
 
+    public convertField(name: string): string {
+        return name.replace(/([A-Z])/g, (match) => `_${match.toLowerCase()}`)
+    }
 
+    public getChangeField(src: any, target: any, ignore: string[], changes?: string[]): any {
+        changes = changes ? changes : []
+        for (const field of this.fields) {
+            if (field.get(src) !== field.get(target)) {
+                changes.push(field.name || "")
+            }
+        }
+        return changes
+    }
 }
 
+
 /**
- * RefDescriptor：包装引用（递归结构）。TS 无 unsafe 偏移，透传目标描述符，
- * 额外处理 isPtr 语义（可空 data 元素的空标记，与 Go RefDescriptor 一致）。
+ * SyncDataDescriptor：延迟构建描述符（对应 Go 的 sync.Once，JS 单线程直接缓存）。
  */
-export class RefDescriptor implements Descriptor {
-    private cache: Descriptor | null = null
-    private getDesc: (() => Descriptor) | null = null
+export class SyncDataDescriptor implements Descriptor {
+    private cached?: DataDescriptor
 
-    constructor(getDesc: () => Descriptor, private isPtr = false) {
-        this.getDesc = getDesc
-    }
-
-    clone(val?: any, target?: any): any {
-        return this.desc.clone(val, target)
-    }
-
-    get desc(): Descriptor {
-        if (this.cache === null) {
-            this.cache = this.getDesc!()
-        }
-        return this.cache
+    constructor(private f: () => DataDescriptor) {
     }
 
     factory(): any {
-        return this.desc.factory()
+        return this.Desc().factory()
+    }
+
+    clone(val?: any, target?: any): any {
+        return this.Desc().clone(val, target)
     }
 
     public toJson(v: any): JsonValue {
-        if (v == null) {
-            return null
-        }
-        return this.desc.toJson(v)
+        return this.Desc().toJson(v)
     }
 
-    public fromJson(json: JsonValue, target?: any) {
-        if (json == null && this.isPtr) {
-            return null
+    public fromJson(json: JsonValue, target?: any): any {
+        return this.Desc().fromJson(json, target)
+    }
+
+    public Desc(): DataDescriptor {
+        if (!this.cached) {
+            this.cached = this.f()
         }
-        return this.desc.fromJson(json, target)
+        return this.cached
     }
 
     public zero(): any {
-        return null
+        return this.Desc().zero()
     }
 
     public isEmpty(v: any): boolean {
-        return v == null
+        return this.Desc().isEmpty(v)
     }
 
     public encode(buf: Writer, v: any, id?: number): void {
-        if (id !== undefined) {
-            if (v == null) {
-                return
-            }
-            this.desc.encode(buf, v, id)
-        } else {
-            if (v == null) {
-                if (this.isPtr) {
-                    WriterType(buf, Type.TData, 0, 1)
-                } else {
-                    // 与 Go 一致：值元素（非指针）零值写 3 字节空结构
-                    this.desc.encode(buf, null, undefined)
-                }
-                return
-            }
-            this.desc.encode(buf, v, undefined)
-        }
+        this.Desc().encode(buf, v, id)
     }
 
     public decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any {
-        // isPtr 时不复用 target：与 Go 一致每次解码分配新实例
-        return this.desc.decode(r, typ, valRead, valueLen, this.isPtr ? undefined : target)
+        return this.Desc().decode(r, typ, valRead, valueLen, target)
+    }
+
+    public convertField(name: string): string {
+        return this.Desc().convertField(name)
+    }
+
+    public getChangeField(src: any, target: any, ignore: string[], changes?: string[]): any {
+        return this.Desc().getChangeField(src, target, ignore, changes)
     }
 }
