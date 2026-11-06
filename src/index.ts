@@ -35,12 +35,13 @@ import {
     convertArray,
     convertRecord,
     formatDate,
+    formatDuration,
     isArray,
     isData,
     isRecord,
     RecordEntry,
     waiting,
-    traceId
+    traceId, convertMap
 } from "./utils/tools";
 
 export {
@@ -60,9 +61,11 @@ export {
     convertArray,
     RecordEntry,
     convertRecord,
+    convertMap,
     isRecord,
     isArray,
     formatDate,
+    formatDuration,
     isData,
     traceId,
     Int8Descriptor,
@@ -103,9 +106,12 @@ export default {
     convertArray,
     RecordEntry,
     convertRecord,
+    convertMap,
+    traceId,
     isRecord,
     isArray,
     formatDate,
+    formatDuration,
     isData,
     Int8Descriptor,
     Int16Descriptor,
@@ -126,7 +132,6 @@ export default {
     MapDescriptor,
     DataDescriptor,
     RefDescriptor,
-    traceId,
 }
 
 

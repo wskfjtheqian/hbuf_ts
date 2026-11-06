@@ -1,3 +1,5 @@
+import Decimal from "decimal.js";
+
 //等待指定时间 （毫秒）
 export async function waiting(time: number): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -47,6 +49,17 @@ export function convertRecord<T extends keyof any, E, A extends keyof any, B, >(
     return ret
 }
 
+export function convertMap<K, V>(map: Map<any, any> | null, key: (k: any) => K, val: (v: any) => V): Map<K, V> | null {
+    if (null == map) {
+        return null
+    }
+    let ret: Map<K, V> = new Map<K, V>()
+    map.forEach((v, k) => {
+        ret.set(key(k), val(v))
+    })
+    return ret
+}
+
 export function isRecord(o: any) {
     return Object.getPrototypeOf({}) === Object.getPrototypeOf(o)
 }
@@ -55,38 +68,70 @@ export function isArray(o: any) {
     return Object.getPrototypeOf([]) === Object.getPrototypeOf(o)
 }
 
+// 纯日期字符串（YYYY-MM-DD / YYYY-M-D）：Safari 无法解析 "-" 分隔格式，需替换为 "/"
+const PURE_DATE_REGEX = /^\d{4}-\d{1,2}-\d{1,2}$/
+
+// 将数字补零到指定宽度
+function pad(n: number, width: number): string {
+    return ("" + n).padStart(width, "0")
+}
+
 export function formatDate(date: Date | string | number, format?: string): string {
     if (!format) format = "YYYY-MM-DD"
     switch (typeof date) {
         case "string":
-            date = new Date(date.replace(/-/g, "/"));
-            break;
+            date = new Date(PURE_DATE_REGEX.test(date) ? date.replace(/-/g, "/") : date)
+            break
         case "number":
-            date = new Date(date);
-            break;
+            date = new Date(date)
+            break
     }
-    if (date instanceof Date) {
-        const dict: any = {
-            YYYY: date.getFullYear(),
-            M: date.getMonth() + 1,
-            D: date.getDate(),
-            H: date.getHours(),
-            m: date.getMinutes(),
-            s: date.getSeconds(),
-            S: date.getMilliseconds(),
-            MM: ("" + (date.getMonth() + 101)).substring(1),
-            DD: ("" + (date.getDate() + 100)).substring(1),
-            HH: ("" + (date.getHours() + 100)).substring(1),
-            mm: ("" + (date.getMinutes() + 100)).substring(1),
-            ss: ("" + (date.getSeconds() + 100)).substring(1),
-            SS: ("" + (date.getMilliseconds() + 100)).substring(1)
-        };
-        return format.replace(/(YYYY|MM?|DD?|HH?|ss?|mm?|SS?)/g, function () {
-            return dict[arguments[0]];
-        });
+    // 非法输入（Invalid Date）返回空字符串，避免输出 "NaN-NaN-NaN"
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return ""
     }
-    return "" + date
+    const year = date.getFullYear()
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    const hour = date.getHours()
+    const minute = date.getMinutes()
+    const second = date.getSeconds()
+    const millisecond = date.getMilliseconds()
+    const dict: Record<string, string> = {
+        YYYY: pad(year, 4),
+        M: "" + month,
+        MM: pad(month, 2),
+        D: "" + day,
+        DD: pad(day, 2),
+        H: "" + hour,
+        HH: pad(hour, 2),
+        m: "" + minute,
+        mm: pad(minute, 2),
+        s: "" + second,
+        ss: pad(second, 2),
+        S: "" + millisecond,
+        SS: pad(Math.floor(millisecond / 10), 2),
+        SSS: pad(millisecond, 3),
+    }
+    return format.replace(/YYYY|MM?|DD?|HH?|mm?|ss?|SSS?|S/g, (token) => dict[token])
 }
+
+//时长秒转成时间格式（超过一天显示为 XdHH:MM:SS）
+export function formatDuration(val?: number | Decimal | null | undefined): string {
+    const duration = val instanceof Decimal ? val.toNumber() : val
+    if (null == duration || !Number.isFinite(duration)) {
+        return "00:00:00"
+    }
+    // 向下取整到整秒，避免小数秒被四舍五入为 "60"；负值按 0 处理
+    const total = Math.max(0, Math.floor(duration))
+    const days = Math.floor(total / 86400)
+    const hours = Math.floor((total % 86400) / 3600)
+    const minutes = Math.floor((total % 3600) / 60)
+    const seconds = total % 60
+    const hms = `${pad(hours, 2)}:${pad(minutes, 2)}:${pad(seconds, 2)}`
+    return days > 0 ? `${days}d${hms}` : hms
+}
+
 
 export function isData(obj: any): boolean {
     return obj && typeof obj.descriptors === 'function';

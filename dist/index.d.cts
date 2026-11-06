@@ -1,3 +1,5 @@
+import Decimal from 'decimal.js';
+
 /**
  * Descriptor 描述一个 HBuf 值的编解码方式（对应 Go 版 Descriptor，无 unsafe 偏移）。
  */
@@ -516,9 +518,11 @@ declare class RecordEntry<T extends keyof any, E> {
     constructor(key: T, val: E);
 }
 declare function convertRecord<T extends keyof any, E, A extends keyof any, B>(record: Record<T, E> | null, call: (key: T, val: E) => RecordEntry<A, B>): Record<A, B> | null;
+declare function convertMap<K, V>(map: Map<any, any> | null, key: (k: any) => K, val: (v: any) => V): Map<K, V> | null;
 declare function isRecord(o: any): boolean;
 declare function isArray(o: any): boolean;
 declare function formatDate(date: Date | string | number, format?: string): string;
+declare function formatDuration(val?: number | Decimal | null | undefined): string;
 declare function isData(obj: any): boolean;
 declare function traceId(): string;
 
@@ -539,9 +543,12 @@ declare const _default: {
     convertArray: typeof convertArray;
     RecordEntry: typeof RecordEntry;
     convertRecord: typeof convertRecord;
+    convertMap: typeof convertMap;
+    traceId: typeof traceId;
     isRecord: typeof isRecord;
     isArray: typeof isArray;
     formatDate: typeof formatDate;
+    formatDuration: typeof formatDuration;
     isData: typeof isData;
     Int8Descriptor: typeof Int8Descriptor;
     Int16Descriptor: typeof Int16Descriptor;
@@ -562,7 +569,6 @@ declare const _default: {
     MapDescriptor: typeof MapDescriptor;
     DataDescriptor: typeof DataDescriptor;
     RefDescriptor: typeof RefDescriptor;
-    traceId: typeof traceId;
 };
 
-export { BoolDescriptor, type BufferType, BytesDescriptor, Client, type ClientOption, DataDescriptor, DecimalDescriptor, type Decoder, type Descriptor, DoubleDescriptor, type Encoder, Error$1 as Error, FetchClient, type FieldDesc, FloatDescriptor, HBufError, type HData, type Handler, type HandlerMiddleware, HttpClient, Int16Descriptor, Int32Descriptor, Int64Descriptor, Int8Descriptor, ListDescriptor, MapDescriptor, Marshal, type Method, NewHBufDecoder, NewHBufEncode, NewJsonDecoder, NewJsonEncode, type Option, Reader, RecordEntry, RefDescriptor, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, ShortBufferError, StringDescriptor, TimeDescriptor, Type, Uint16Descriptor, Uint32Descriptor, Uint64Descriptor, Uint8Descriptor, Unmarshal, WebSocketClient, type WebSocketClientOption, WebSocketData, Writer, convertArray, convertRecord, _default as default, formatDate, isArray, isData, isHData, isRecord, traceId, waiting };
+export { BoolDescriptor, type BufferType, BytesDescriptor, Client, type ClientOption, DataDescriptor, DecimalDescriptor, type Decoder, type Descriptor, DoubleDescriptor, type Encoder, Error$1 as Error, FetchClient, type FieldDesc, FloatDescriptor, HBufError, type HData, type Handler, type HandlerMiddleware, HttpClient, Int16Descriptor, Int32Descriptor, Int64Descriptor, Int8Descriptor, ListDescriptor, MapDescriptor, Marshal, type Method, NewHBufDecoder, NewHBufEncode, NewJsonDecoder, NewJsonEncode, type Option, Reader, RecordEntry, RefDescriptor, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, ShortBufferError, StringDescriptor, TimeDescriptor, Type, Uint16Descriptor, Uint32Descriptor, Uint64Descriptor, Uint8Descriptor, Unmarshal, WebSocketClient, type WebSocketClientOption, WebSocketData, Writer, convertArray, convertMap, convertRecord, _default as default, formatDate, formatDuration, isArray, isData, isHData, isRecord, traceId, waiting };

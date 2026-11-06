@@ -70,9 +70,11 @@ __export(index_exports, {
   WebSocketData: () => WebSocketData,
   Writer: () => Writer,
   convertArray: () => convertArray,
+  convertMap: () => convertMap,
   convertRecord: () => convertRecord,
   default: () => index_default,
   formatDate: () => formatDate,
+  formatDuration: () => formatDuration,
   isArray: () => isArray,
   isData: () => isData,
   isHData: () => isHData,
@@ -1836,6 +1838,7 @@ var Server = class {
 };
 
 // src/utils/tools.ts
+var import_decimal2 = __toESM(require("decimal.js"), 1);
 async function waiting(time) {
   return new Promise((resolve, reject) => {
     setTimeout(() => resolve(), Math.max(time, 0));
@@ -1874,43 +1877,76 @@ function convertRecord(record, call) {
   }
   return ret;
 }
+function convertMap(map, key, val) {
+  if (null == map) {
+    return null;
+  }
+  let ret = /* @__PURE__ */ new Map();
+  map.forEach((v, k) => {
+    ret.set(key(k), val(v));
+  });
+  return ret;
+}
 function isRecord(o) {
   return Object.getPrototypeOf({}) === Object.getPrototypeOf(o);
 }
 function isArray(o) {
   return Object.getPrototypeOf([]) === Object.getPrototypeOf(o);
 }
+var PURE_DATE_REGEX = /^\d{4}-\d{1,2}-\d{1,2}$/;
+function pad(n, width) {
+  return ("" + n).padStart(width, "0");
+}
 function formatDate(date, format) {
   if (!format) format = "YYYY-MM-DD";
   switch (typeof date) {
     case "string":
-      date = new Date(date.replace(/-/g, "/"));
+      date = new Date(PURE_DATE_REGEX.test(date) ? date.replace(/-/g, "/") : date);
       break;
     case "number":
       date = new Date(date);
       break;
   }
-  if (date instanceof Date) {
-    const dict = {
-      YYYY: date.getFullYear(),
-      M: date.getMonth() + 1,
-      D: date.getDate(),
-      H: date.getHours(),
-      m: date.getMinutes(),
-      s: date.getSeconds(),
-      S: date.getMilliseconds(),
-      MM: ("" + (date.getMonth() + 101)).substring(1),
-      DD: ("" + (date.getDate() + 100)).substring(1),
-      HH: ("" + (date.getHours() + 100)).substring(1),
-      mm: ("" + (date.getMinutes() + 100)).substring(1),
-      ss: ("" + (date.getSeconds() + 100)).substring(1),
-      SS: ("" + (date.getMilliseconds() + 100)).substring(1)
-    };
-    return format.replace(/(YYYY|MM?|DD?|HH?|ss?|mm?|SS?)/g, function() {
-      return dict[arguments[0]];
-    });
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return "";
   }
-  return "" + date;
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hour = date.getHours();
+  const minute = date.getMinutes();
+  const second = date.getSeconds();
+  const millisecond = date.getMilliseconds();
+  const dict = {
+    YYYY: pad(year, 4),
+    M: "" + month,
+    MM: pad(month, 2),
+    D: "" + day,
+    DD: pad(day, 2),
+    H: "" + hour,
+    HH: pad(hour, 2),
+    m: "" + minute,
+    mm: pad(minute, 2),
+    s: "" + second,
+    ss: pad(second, 2),
+    S: "" + millisecond,
+    SS: pad(Math.floor(millisecond / 10), 2),
+    SSS: pad(millisecond, 3)
+  };
+  return format.replace(/YYYY|MM?|DD?|HH?|mm?|ss?|SSS?|S/g, (token) => dict[token]);
+}
+function formatDuration(val) {
+  const duration = val instanceof import_decimal2.default ? val.toNumber() : val;
+  if (null == duration || !Number.isFinite(duration)) {
+    return "00:00:00";
+  }
+  const total = Math.max(0, Math.floor(duration));
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor(total % 86400 / 3600);
+  const minutes = Math.floor(total % 3600 / 60);
+  const seconds = total % 60;
+  const hms = `${pad(hours, 2)}:${pad(minutes, 2)}:${pad(seconds, 2)}`;
+  return days > 0 ? `${days}d${hms}` : hms;
 }
 function isData(obj) {
   return obj && typeof obj.descriptors === "function";
@@ -2245,9 +2281,12 @@ var index_default = {
   convertArray,
   RecordEntry,
   convertRecord,
+  convertMap,
+  traceId,
   isRecord,
   isArray,
   formatDate,
+  formatDuration,
   isData,
   Int8Descriptor,
   Int16Descriptor,
@@ -2267,8 +2306,7 @@ var index_default = {
   ListDescriptor,
   MapDescriptor,
   DataDescriptor,
-  RefDescriptor,
-  traceId
+  RefDescriptor
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
@@ -2312,8 +2350,10 @@ var index_default = {
   WebSocketData,
   Writer,
   convertArray,
+  convertMap,
   convertRecord,
   formatDate,
+  formatDuration,
   isArray,
   isData,
   isHData,
