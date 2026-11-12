@@ -290,7 +290,10 @@ declare class DataDescriptor implements Descriptor {
     encode(buf: Writer, v: any, id?: number): void;
     decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any;
     convertField(name: string): string;
-    getChangeField(src: any, target: any, ignore: string[], changes?: string[]): any;
+    getChangeField<T extends HData>(target: T, src: T, ignore: string[], changes?: string[]): {
+        change: T;
+        fields: string[];
+    };
 }
 
 type JsonValue = string | number | boolean | null | undefined | JsonValue[] | {

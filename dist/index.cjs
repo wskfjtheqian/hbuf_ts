@@ -1632,14 +1632,16 @@ var DataDescriptor = class {
   convertField(name) {
     return name.replace(/([A-Z])/g, (match) => `_${match.toLowerCase()}`);
   }
-  getChangeField(src, target, ignore, changes) {
-    changes = changes ? changes : [];
+  getChangeField(target, src, ignore, changes) {
+    const ret = { change: this.factory(), fields: changes ? changes : [] };
     for (const field of this.fields) {
-      if (field.get(src) !== field.get(target)) {
-        changes.push(field.name || "");
+      const val = field.get(target);
+      if (field.get(src) !== val) {
+        ret.fields.push(field.name || "");
+        field.set(ret.change, val);
       }
     }
-    return changes;
+    return ret;
   }
 };
 

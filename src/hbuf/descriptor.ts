@@ -1,4 +1,4 @@
-import {HBufError, JsonValue, Reader, Type, Writer} from "./data";
+import {HBufError, HData, JsonValue, Reader, Type, Writer} from "./data";
 import {DecodeId, DecodeInt64, DecodeType, DecodeUint64, DecodeTime, SkipValue} from "./decoder";
 import {EncodeTime, EncodeUint64, LengthId, LengthInt, LengthUint, WriterId, WriterInt64, WriterType} from "./encoder";
 import Decimal from "decimal.js";
@@ -1525,71 +1525,18 @@ export class DataDescriptor implements Descriptor {
         return name.replace(/([A-Z])/g, (match) => `_${match.toLowerCase()}`)
     }
 
-    public getChangeField(src: any, target: any, ignore: string[], changes?: string[]): any {
-        changes = changes ? changes : []
+    public getChangeField<T extends HData>(target: T, src: T, ignore: string[], changes?: string[]): {
+        change: T,
+        fields: string[]
+    } {
+        const ret = {change: this.factory() as T, fields: changes ? changes : []}
         for (const field of this.fields) {
-            if (field.get(src) !== field.get(target)) {
-                changes.push(field.name || "")
+            const val = field.get(target)
+            if (field.get(src) !== val) {
+                ret.fields.push(field.name || "")
+                field.set(ret.change, val)
             }
         }
-        return changes
-    }
-}
-
-
-/**
- * SyncDataDescriptor：延迟构建描述符（对应 Go 的 sync.Once，JS 单线程直接缓存）。
- */
-export class SyncDataDescriptor implements Descriptor {
-    private cached?: DataDescriptor
-
-    constructor(private f: () => DataDescriptor) {
-    }
-
-    factory(): any {
-        return this.Desc().factory()
-    }
-
-    clone(val?: any, target?: any): any {
-        return this.Desc().clone(val, target)
-    }
-
-    public toJson(v: any): JsonValue {
-        return this.Desc().toJson(v)
-    }
-
-    public fromJson(json: JsonValue, target?: any): any {
-        return this.Desc().fromJson(json, target)
-    }
-
-    public Desc(): DataDescriptor {
-        if (!this.cached) {
-            this.cached = this.f()
-        }
-        return this.cached
-    }
-
-    public zero(): any {
-        return this.Desc().zero()
-    }
-
-    public isEmpty(v: any): boolean {
-        return this.Desc().isEmpty(v)
-    }
-
-    public encode(buf: Writer, v: any, id?: number): void {
-        this.Desc().encode(buf, v, id)
-    }
-
-    public decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any {
-        return this.Desc().decode(r, typ, valRead, valueLen, target)
-    }
-
-    public convertField(name: string): string {
-        return this.Desc().convertField(name)
-    }
-
-    public getChangeField(src: any, target: any, ignore: string[], changes?: string[]): any {
-        return this.Desc().getChangeField(src, target, ignore, changes)
+        return ret
     }
 }
