@@ -20,6 +20,10 @@ export interface Option {
     headers: Headers
     method: string
     traceId?: string
+    // path 完整 RPC 路径（name/method），由 invoke 写入，供中间件（如调试埋点）使用
+    path?: string
+    // notification 是否单向通知（desc == null），由 invoke 写入
+    notification?: boolean
 }
 
 export type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>
@@ -240,7 +244,7 @@ export class Client {
                 return (resp as Result).data
             }
             return resp as T
-        })(request, {method: method, headers: new Headers()}) as Promise<T>
+        })(request, {method: method, path: name + method, notification: desc == null, headers: new Headers()}) as Promise<T>
     }
 }
 

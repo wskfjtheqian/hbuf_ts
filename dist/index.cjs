@@ -75,6 +75,7 @@ __export(index_exports, {
   default: () => index_default,
   formatDate: () => formatDate,
   formatDuration: () => formatDuration,
+  installRpcDevtools: () => installRpcDevtools,
   isArray: () => isArray,
   isData: () => isData,
   isHData: () => isHData,
@@ -1790,7 +1791,7 @@ var Client = class {
         return resp.data;
       }
       return resp;
-    })(request, { method, headers: new Headers() });
+    })(request, { method, path: name + method, notification: desc == null, headers: new Headers() });
   }
 };
 var Server = class {
@@ -2265,6 +2266,104 @@ var WebSocketClient = class {
   }
 };
 
+// src/hrpc/devtools.ts
+var MAX_ENTRIES = 300;
+var logSeq = 0;
+function logList() {
+  const w = globalThis;
+  if (!w.__HBUF_RPC_LOG__) {
+    w.__HBUF_RPC_LOG__ = [];
+  }
+  return w.__HBUF_RPC_LOG__;
+}
+function bytesToHex(buf, max = 64) {
+  const u8 = new Uint8Array(buf);
+  const n = Math.min(u8.length, max);
+  let s = "";
+  for (let i = 0; i < n; i++) {
+    s += u8[i].toString(16).padStart(2, "0");
+  }
+  return u8.length > max ? s + "..." : s;
+}
+function toJson(v) {
+  if (isHData(v)) {
+    try {
+      return v.descriptors().toJson(v);
+    } catch (e) {
+      return { __toJsonError__: String(e) };
+    }
+  }
+  if (v instanceof ArrayBuffer) {
+    return { __bytes__: v.byteLength, __hex__: bytesToHex(v) };
+  }
+  if (v instanceof Blob) {
+    return { __blob__: v.size };
+  }
+  if (v instanceof Error2) {
+    return { code: v.code, msg: v.msg };
+  }
+  return v ?? null;
+}
+function dispatchLog(item) {
+  const w = globalThis;
+  if (typeof w.dispatchEvent === "function") {
+    w.dispatchEvent(new CustomEvent("__hbuf_rpc_log__", { detail: item }));
+  }
+}
+function pushLog(entry) {
+  const item = { ...entry, id: ++logSeq, ts: Date.now() };
+  const list = logList();
+  list.unshift(item);
+  if (list.length > MAX_ENTRIES) {
+    list.length = MAX_ENTRIES;
+  }
+  dispatchLog(item);
+  return item.id;
+}
+function updateLog(id, patch) {
+  const list = logList();
+  const item = list.find((e) => e.id === id);
+  if (!item) return;
+  Object.assign(item, patch);
+  dispatchLog(item);
+}
+function installRpcDevtools(client, transport, base = "") {
+  const raw = client.middleware.bind(client);
+  client.middleware = (next) => {
+    return raw(async (req, opt) => {
+      const start = performance.now();
+      const id = pushLog({
+        transport,
+        path: base + (opt?.path ?? opt?.method ?? ""),
+        notification: opt?.notification ?? false,
+        traceId: opt?.traceId,
+        req: toJson(req),
+        status: "pending"
+      });
+      try {
+        const resp = await next(req, opt);
+        updateLog(id, {
+          resp: toJson(resp),
+          duration: Math.round(performance.now() - start),
+          status: "done"
+        });
+        return resp;
+      } catch (e) {
+        updateLog(id, {
+          resp: isHData(e) ? toJson(e) : void 0,
+          duration: Math.round(performance.now() - start),
+          error: e instanceof Error2 ? e.msg : e?.message ?? String(e),
+          status: "done"
+        });
+        throw e;
+      }
+    });
+  };
+  return () => {
+    client.middleware = raw;
+  };
+}
+
 // src/index.ts
 var index_default = {
   Client,
@@ -2279,6 +2378,7 @@ var index_default = {
   NewHBufDecoder,
   NewHBufEncode,
   WebSocketData,
+  installRpcDevtools,
   waiting,
   convertArray,
   RecordEntry,
@@ -2356,6 +2456,7 @@ var index_default = {
   convertRecord,
   formatDate,
   formatDuration,
+  installRpcDevtools,
   isArray,
   isData,
   isHData,
