@@ -32,7 +32,7 @@ var index_exports = {};
 __export(index_exports, {
   BoolDescriptor: () => BoolDescriptor,
   BytesDescriptor: () => BytesDescriptor,
-  Client: () => Client2,
+  Client: () => Client,
   DataDescriptor: () => DataDescriptor,
   DecimalDescriptor: () => DecimalDescriptor,
   DoubleDescriptor: () => DoubleDescriptor,
@@ -1646,15 +1646,7 @@ var DataDescriptor = class {
 };
 
 // src/hrpc/devtools.ts
-var MAX_ENTRIES = 300;
 var logSeq = 0;
-function logList() {
-  const w = globalThis;
-  if (!w.__HBUF_RPC_LOG__) {
-    w.__HBUF_RPC_LOG__ = [];
-  }
-  return w.__HBUF_RPC_LOG__;
-}
 function bytesToHex(buf, max = 64) {
   const u8 = new Uint8Array(buf);
   const n = Math.min(u8.length, max);
@@ -1701,38 +1693,26 @@ function dispatchLog(item) {
     w.dispatchEvent(new CustomEvent("__hbuf_rpc_log__", { detail: item }));
   }
 }
-function pushLog(entry) {
-  const item = { ...entry, id: ++logSeq, ts: Date.now() };
-  const list = logList();
-  list.unshift(item);
-  if (list.length > MAX_ENTRIES) {
-    list.length = MAX_ENTRIES;
-  }
-  dispatchLog(item);
-  return item.id;
-}
-function updateLog(id, patch) {
-  const list = logList();
-  const item = list.find((e) => e.id === id);
-  if (!item) return;
-  Object.assign(item, patch);
-  dispatchLog(item);
-}
 function devtoolsMiddleware(transport) {
   return (next) => {
     return async (req, opt) => {
       const start = performance.now();
-      const id = pushLog({
+      const id = ++logSeq;
+      const baseEntry = {
+        id,
+        ts: Date.now(),
         transport,
         path: opt?.path ?? opt?.method ?? "",
         notification: opt?.notification ?? false,
         traceId: opt?.traceId,
         req: toJson(req),
         status: "pending"
-      });
+      };
+      dispatchLog(baseEntry);
       try {
         const resp = await next(req, opt);
-        updateLog(id, {
+        dispatchLog({
+          ...baseEntry,
           resp: toJson(resp),
           reqHeaders: headersToRecord(opt?.headers),
           duration: Math.round(performance.now() - start),
@@ -1740,7 +1720,8 @@ function devtoolsMiddleware(transport) {
         });
         return resp;
       } catch (e) {
-        updateLog(id, {
+        dispatchLog({
+          ...baseEntry,
           resp: isHData(e) ? toJson(e) : void 0,
           reqHeaders: headersToRecord(opt?.headers),
           duration: Math.round(performance.now() - start),
@@ -1877,7 +1858,7 @@ function NewHBufDecoder() {
     return data;
   };
 }
-var Client2 = class {
+var Client = class {
   constructor(request, option) {
     this.request = request;
     const middleware = [devtoolsMiddleware(request.type), ...option?.middleware ?? []];
@@ -2390,7 +2371,7 @@ var WebSocketClient = class {
 
 // src/index.ts
 var index_default = {
-  Client: Client2,
+  Client,
   HttpClient,
   FetchClient,
   WebSocketClient,

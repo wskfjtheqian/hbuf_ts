@@ -551,11 +551,6 @@ interface HbufRpcLogEntry {
     reqHeaders?: Record<string, string>;
     status: "pending" | "done";
 }
-declare global {
-    interface Window {
-        __HBUF_RPC_LOG__?: HbufRpcLogEntry[];
-    }
-}
 
 declare const _default: {
     Client: typeof Client;
