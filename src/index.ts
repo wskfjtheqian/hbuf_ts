@@ -1,6 +1,5 @@
 import {FetchClient, HttpClient} from "./hrpc/http";
 import {WebSocketClient, WebSocketData} from "./hrpc/websocket";
-import {installRpcDevtools} from "./hrpc/devtools";
 import {
     Client,
     Error,
@@ -58,7 +57,6 @@ export {
     NewHBufDecoder,
     NewHBufEncode,
     WebSocketData,
-    installRpcDevtools,
     waiting,
     convertArray,
     RecordEntry,
@@ -104,7 +102,6 @@ export default {
     NewHBufDecoder,
     NewHBufEncode,
     WebSocketData,
-    installRpcDevtools,
     waiting,
     convertArray,
     RecordEntry,

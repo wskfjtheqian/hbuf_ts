@@ -59,7 +59,7 @@ test("HTTP RPC: HBufTestTs 128 字段作为参数与返回值（JSON codec）", 
     const port = (httpServer.address() as AddressInfo).port
 
     const http = new FetchClient(`http://127.0.0.1:${port}`)
-    const client = new Client(http.request.bind(http))
+    const client = new Client(http)
 
     const src = buildFull()
     const res = await client.invoke<HBufTestTs>(1, "service", "method", src, hbTestDesc)
@@ -95,7 +95,7 @@ test("HTTP RPC: HBufTestTs 128 字段作为参数与返回值（HBuf codec）", 
     const port = (httpServer.address() as AddressInfo).port
 
     const http = new FetchClient(`http://127.0.0.1:${port}`, {encode: NewHBufEncode(), decode: NewHBufDecoder()})
-    const client = new Client(http.request.bind(http))
+    const client = new Client(http)
 
     const src = buildFull()
     const res = await client.invoke<HBufTestTs>(1, "service", "method", src, hbTestDesc)
@@ -121,7 +121,7 @@ test("WebSocket RPC: HBufTestTs 128 字段作为参数与返回值", async () =>
     // 客户端：Client.invoke 经 WebSocket 传输
     const wsClient = new WebSocketClient(`ws://127.0.0.1:${port}`)
     await wsClient.connect()
-    const client = new Client(wsClient.request.bind(wsClient))
+    const client = new Client(wsClient)
 
     const src = buildFull()
     const res = await client.invoke<HBufTestTs>(1, "service", "method", src, hbTestDesc)

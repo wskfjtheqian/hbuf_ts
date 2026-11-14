@@ -1,4 +1,7 @@
-import {BufferType, Decoder, Encoder, NewJsonDecoder, NewJsonEncode, NewResultDesc, Option, RequestType, ResponseType} from "./rpc";
+import {
+    BufferType, Decoder, Encoder, NewJsonDecoder, NewJsonEncode, NewResultDesc, Option,
+    Request, RequestType, ResponseType
+} from "./rpc";
 import {Descriptor} from "../hbuf/descriptor";
 import {isData, traceId} from "../utils/tools";
 
@@ -8,7 +11,7 @@ export interface HttpClientOption {
     encode?: Encoder
 }
 
-export class HttpClient {
+export class HttpClient implements Request {
     protected base: string;
     protected decode: Decoder
     protected encode: Encoder
@@ -21,7 +24,11 @@ export class HttpClient {
 
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType> {
+    get type(): "http" | "websocket" {
+        return "http"
+    }
+
+    public async call(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType> {
         const body = isData(req) ? this.encode(req as any) : req as BufferType
         const resp = await this.fetch(path, body, opt)
         if (desc) {
@@ -53,7 +60,7 @@ export class HttpClient {
     }
 }
 
-export class FetchClient {
+export class FetchClient implements Request {
     protected base: string;
     protected decode: Decoder
     protected encode: Encoder
@@ -66,7 +73,12 @@ export class FetchClient {
 
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType> {
+
+    get type(): "http" | "websocket" {
+        return "http"
+    }
+
+    public async call(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType> {
         const body = isData(req) ? this.encode(req as any) : req as BufferType
         const resp = await this.fetch(path, body, opt)
         if (desc) {
@@ -92,7 +104,7 @@ export class FetchClient {
         }
     }
 
-    public $getChangeField():string[]{
+    public $getChangeField(): string[] {
         return []
     }
 }

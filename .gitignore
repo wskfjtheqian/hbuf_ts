@@ -1,3 +1,11 @@
 
-`1
 /node_modules/
+/hbuf-devtools/background.js
+/hbuf-devtools/bridge.js
+/hbuf-devtools/content.js
+/hbuf-devtools/devtools.html
+/hbuf-devtools/devtools.js
+/hbuf-devtools/manifest.json
+/hbuf-devtools/panel.css
+/hbuf-devtools/panel.html
+/hbuf-devtools/panel.js

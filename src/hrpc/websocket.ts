@@ -18,7 +18,7 @@ import {
     NewJsonDecoder,
     NewJsonEncode,
     NewResultDesc,
-    Option,
+    Option, Request,
     RequestType,
     ResponseType,
     Result,
@@ -123,7 +123,7 @@ export interface WebSocketClientOption {
     encode?: Encoder
 }
 
-export class WebSocketClient {
+export class WebSocketClient implements Request{
     protected baseUrl: string;
     protected socket?: WebSocket;
     protected requestId: bigint = 0n
@@ -146,7 +146,11 @@ export class WebSocketClient {
         this.encode = option?.encode ?? NewJsonEncode()
     }
 
-    public async request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType> {
+    get type(): "http" | "websocket" {
+        return "websocket"
+    }
+
+    public async call(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType> {
         this.requestId++
         let data = new WebSocketData(
             notification ? RpcType.Notification : RpcType.Request,

@@ -11,6 +11,7 @@ import {
     StringDescriptor,
     Uint8Descriptor
 } from "../hbuf/descriptor";
+import {devtoolsMiddleware} from "./devtools";
 
 export type BufferType = ArrayBuffer | Blob
 export type RequestType = BufferType | HData | undefined
@@ -37,8 +38,12 @@ export type Encoder = (v: HData) => ArrayBuffer
 // Decoder 解码器：按数据描述符将二进制解码为 HData 实例。
 export type Decoder = (reader: ArrayBuffer, desc: Descriptor) => HData
 
-export type Request = (path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option) => Promise<ResponseType>
 
+export interface Request {
+    call(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>
+
+    type: ("http" | "websocket")
+}
 
 /**
  * Error RPC 错误对象（与 Result 共用 code/msg 编解码约定）。
@@ -117,7 +122,7 @@ export function NewResultDesc(dataDesc?: Descriptor): DataDescriptor {
     if (dataDesc) {
         fields.set(3, {
             name: "data",
-                desc: new RefDescriptor(() => dataDesc, true),
+            desc: new RefDescriptor(() => dataDesc, true),
             get: (o: Result) => o.data,
             set: (o: Result, v: any) => o.data = v
         })
@@ -136,7 +141,7 @@ export class JsonDescriptor implements Descriptor {
     constructor(private isPtr = false) {
     }
 
-    clone(val?: any, target?: any):any {
+    clone(val?: any, target?: any): any {
         return val
     }
 
@@ -223,11 +228,11 @@ export class Client {
     middleware: HandlerMiddleware
 
     constructor(request: Request, option?: ClientOption) {
-        this.request = request;
-
+        this.request = request
+        const middleware = [devtoolsMiddleware(request.type), ...option?.middleware ?? []]
         this.middleware = (next: Handler): Handler => {
-            for (let i = (option?.middleware?.length ?? 0) - 1; i >= 0; i--) {
-                next = option!.middleware![i](next)
+            for (let i = middleware.length - 1; i >= 0; i--) {
+                next = middleware[i](next)
             }
             return next
         }
@@ -236,7 +241,7 @@ export class Client {
     public invoke<T extends ResponseType>(id: number, name: string, method: string, request: RequestType, desc?: Descriptor): Promise<T> {
         name = name.replace(/^\/+|\/+$/g, "") + "/"
         return this.middleware(async (req: RequestType, opt?: Option): Promise<ResponseType> => {
-            const resp = await this.request(name + method, desc == null, req, desc, opt)
+            const resp = await this.request.call(name + method, desc == null, req, desc, opt)
             if (desc) {
                 if ((resp as Result).code !== 0) {
                     throw resp
@@ -244,7 +249,12 @@ export class Client {
                 return (resp as Result).data
             }
             return resp as T
-        })(request, {method: method, path: name + method, notification: desc == null, headers: new Headers()}) as Promise<T>
+        })(request, {
+            method: method,
+            path: name + method,
+            notification: desc == null,
+            headers: new Headers()
+        }) as Promise<T>
     }
 }
 

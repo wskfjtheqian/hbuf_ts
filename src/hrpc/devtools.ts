@@ -1,5 +1,5 @@
 import {isHData} from "../hbuf/data";
-import {Client, Error as RpcError, Handler, ResponseType} from "./rpc";
+import {Client, Error as RpcError, Handler, HandlerMiddleware, Option, RequestType, ResponseType} from "./rpc";
 
 // 一条 RPC 调试记录，会写入 window.__HBUF_RPC_LOG__ 供 Chrome 扩展读取
 export interface HbufRpcLogEntry {
@@ -110,24 +110,16 @@ function updateLog(id: number, patch: Partial<HbufRpcLogEntry>): void {
     dispatchLog(item)
 }
 
-/**
- * 安装 RPC 调试埋点：包装 client.middleware，记录所有 invoke 调用到 window.__HBUF_RPC_LOG__。
- * 中间件位于整个中间件链最外层，记录的是含用户中间件处理的总耗时。
- * 返回卸载函数，恢复原始 middleware。
- *
- * @param client    已构造的 Client 实例（HTTP 或 WebSocket 传输均可）
- * @param transport "http" 或 "websocket"，仅用于面板徽标展示
- * @param base      展示用 URL 前缀，如 "http://localhost:8080/api/"；WebSocket 传 ""
- */
-export function installRpcDevtools(client: Client, transport: "http" | "websocket", base = ""): () => void {
-    const raw = client.middleware.bind(client)
-    client.middleware = (next: Handler): Handler => {
-        return raw(async (req, opt): Promise<ResponseType> => {
+
+// 调试中间件：记录所有 RPC 调用到 window.__HBUF_RPC_LOG__，并返回条目 id 供后续更新
+export function devtoolsMiddleware(transport: "http" | "websocket"): HandlerMiddleware {
+    return (next: Handler): Handler => {
+        return async (req: RequestType, opt?: Option): Promise<ResponseType> => {
             const start = performance.now()
             // next 之前先写入请求日志（pending），异步响应回来后更新同一条目
             const id = pushLog({
                 transport,
-                path: base + (opt?.path ?? opt?.method ?? ""),
+                path: (opt?.path ?? opt?.method ?? ""),
                 notification: opt?.notification ?? false,
                 traceId: opt?.traceId,
                 req: toJson(req),
@@ -152,9 +144,6 @@ export function installRpcDevtools(client: Client, transport: "http" | "websocke
                 })
                 throw e
             }
-        })
-    }
-    return () => {
-        client.middleware = raw
+        }
     }
 }

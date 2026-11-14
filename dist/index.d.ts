@@ -381,7 +381,10 @@ type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>;
 type HandlerMiddleware = (next: Handler) => Handler;
 type Encoder = (v: HData) => ArrayBuffer;
 type Decoder = (reader: ArrayBuffer, desc: Descriptor) => HData;
-type Request = (path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option) => Promise<ResponseType>;
+interface Request {
+    call(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>;
+    type: ("http" | "websocket");
+}
 /**
  * Error RPC 错误对象（与 Result 共用 code/msg 编解码约定）。
  */
@@ -441,20 +444,22 @@ interface HttpClientOption {
     decode?: Decoder;
     encode?: Encoder;
 }
-declare class HttpClient {
+declare class HttpClient implements Request {
     protected base: string;
     protected decode: Decoder;
     protected encode: Encoder;
     constructor(base: string, option?: HttpClientOption);
-    request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>;
+    get type(): "http" | "websocket";
+    call(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>;
     protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
 }
-declare class FetchClient {
+declare class FetchClient implements Request {
     protected base: string;
     protected decode: Decoder;
     protected encode: Encoder;
     constructor(base: string, option?: HttpClientOption);
-    request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>;
+    get type(): "http" | "websocket";
+    call(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>;
     protected fetch(path: string, body?: BufferType, opt?: Option): Promise<BufferType>;
     $getChangeField(): string[];
 }
@@ -491,7 +496,7 @@ interface WebSocketClientOption {
     decode?: Decoder;
     encode?: Encoder;
 }
-declare class WebSocketClient {
+declare class WebSocketClient implements Request {
     protected baseUrl: string;
     protected socket?: WebSocket;
     protected requestId: bigint;
@@ -505,42 +510,14 @@ declare class WebSocketClient {
     protected encode: Encoder;
     onclose?: ((code: string) => any) | null;
     constructor(baseUrl: string, server?: Server, option?: WebSocketClientOption);
-    request(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>;
+    get type(): "http" | "websocket";
+    call(path: string, notification: boolean, req: RequestType, desc?: Descriptor, opt?: Option): Promise<ResponseType>;
     connect(protocols?: string | string[]): Promise<void>;
     close(): void;
     private onMessage;
     private onRequest;
     private onHeartbeat;
 }
-
-interface HbufRpcLogEntry {
-    id: number;
-    ts: number;
-    transport: string;
-    path: string;
-    notification: boolean;
-    traceId?: string;
-    req?: any;
-    resp?: any;
-    duration?: number;
-    error?: string;
-    status: "pending" | "done";
-}
-declare global {
-    interface Window {
-        __HBUF_RPC_LOG__?: HbufRpcLogEntry[];
-    }
-}
-/**
- * 安装 RPC 调试埋点：包装 client.middleware，记录所有 invoke 调用到 window.__HBUF_RPC_LOG__。
- * 中间件位于整个中间件链最外层，记录的是含用户中间件处理的总耗时。
- * 返回卸载函数，恢复原始 middleware。
- *
- * @param client    已构造的 Client 实例（HTTP 或 WebSocket 传输均可）
- * @param transport "http" 或 "websocket"，仅用于面板徽标展示
- * @param base      展示用 URL 前缀，如 "http://localhost:8080/api/"；WebSocket 传 ""
- */
-declare function installRpcDevtools(client: Client, transport: "http" | "websocket", base?: string): () => void;
 
 declare function waiting(time: number): Promise<void>;
 declare function convertArray<T, E>(list: T[] | null, call: (item: T) => E): E[] | null;
@@ -560,6 +537,26 @@ declare function formatDuration(val?: number | Decimal | null | undefined): stri
 declare function isData(obj: any): boolean;
 declare function traceId(): string;
 
+interface HbufRpcLogEntry {
+    id: number;
+    ts: number;
+    transport: string;
+    path: string;
+    notification: boolean;
+    traceId?: string;
+    req?: any;
+    resp?: any;
+    duration?: number;
+    error?: string;
+    reqHeaders?: Record<string, string>;
+    status: "pending" | "done";
+}
+declare global {
+    interface Window {
+        __HBUF_RPC_LOG__?: HbufRpcLogEntry[];
+    }
+}
+
 declare const _default: {
     Client: typeof Client;
     HttpClient: typeof HttpClient;
@@ -573,7 +570,6 @@ declare const _default: {
     NewHBufDecoder: typeof NewHBufDecoder;
     NewHBufEncode: typeof NewHBufEncode;
     WebSocketData: typeof WebSocketData;
-    installRpcDevtools: typeof installRpcDevtools;
     waiting: typeof waiting;
     convertArray: typeof convertArray;
     RecordEntry: typeof RecordEntry;
@@ -606,4 +602,4 @@ declare const _default: {
     RefDescriptor: typeof RefDescriptor;
 };
 
-export { BoolDescriptor, type BufferType, BytesDescriptor, Client, type ClientOption, DataDescriptor, DecimalDescriptor, type Decoder, type Descriptor, DoubleDescriptor, type Encoder, Error$1 as Error, FetchClient, type FieldDesc, FloatDescriptor, HBufError, type HData, type Handler, type HandlerMiddleware, type HbufRpcLogEntry, HttpClient, Int16Descriptor, Int32Descriptor, Int64Descriptor, Int8Descriptor, ListDescriptor, MapDescriptor, Marshal, type Method, NewHBufDecoder, NewHBufEncode, NewJsonDecoder, NewJsonEncode, type Option, Reader, RecordEntry, RefDescriptor, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, ShortBufferError, StringDescriptor, TimeDescriptor, Type, Uint16Descriptor, Uint32Descriptor, Uint64Descriptor, Uint8Descriptor, Unmarshal, WebSocketClient, type WebSocketClientOption, WebSocketData, Writer, convertArray, convertMap, convertRecord, _default as default, formatDate, formatDuration, installRpcDevtools, isArray, isData, isHData, isRecord, traceId, waiting };
+export { BoolDescriptor, type BufferType, BytesDescriptor, Client, type ClientOption, DataDescriptor, DecimalDescriptor, type Decoder, type Descriptor, DoubleDescriptor, type Encoder, Error$1 as Error, FetchClient, type FieldDesc, FloatDescriptor, HBufError, type HData, type Handler, type HandlerMiddleware, type HbufRpcLogEntry, HttpClient, Int16Descriptor, Int32Descriptor, Int64Descriptor, Int8Descriptor, ListDescriptor, MapDescriptor, Marshal, type Method, NewHBufDecoder, NewHBufEncode, NewJsonDecoder, NewJsonEncode, type Option, Reader, RecordEntry, RefDescriptor, type Request, type RequestType, type ResponseType, Result, RpcType, Server, type ServerOption, ShortBufferError, StringDescriptor, TimeDescriptor, Type, Uint16Descriptor, Uint32Descriptor, Uint64Descriptor, Uint8Descriptor, Unmarshal, WebSocketClient, type WebSocketClientOption, WebSocketData, Writer, convertArray, convertMap, convertRecord, _default as default, formatDate, formatDuration, isArray, isData, isHData, isRecord, traceId, waiting };

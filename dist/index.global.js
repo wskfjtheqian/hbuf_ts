@@ -23,7 +23,7 @@ var hbuf = (() => {
   __export(index_exports, {
     BoolDescriptor: () => BoolDescriptor,
     BytesDescriptor: () => BytesDescriptor,
-    Client: () => Client,
+    Client: () => Client2,
     DataDescriptor: () => DataDescriptor,
     DecimalDescriptor: () => DecimalDescriptor,
     DoubleDescriptor: () => DoubleDescriptor,
@@ -66,7 +66,6 @@ var hbuf = (() => {
     default: () => index_default,
     formatDate: () => formatDate,
     formatDuration: () => formatDuration,
-    installRpcDevtools: () => installRpcDevtools,
     isArray: () => isArray,
     isData: () => isData,
     isHData: () => isHData,
@@ -3812,6 +3811,114 @@ var hbuf = (() => {
     }
   };
 
+  // src/hrpc/devtools.ts
+  var MAX_ENTRIES = 300;
+  var logSeq = 0;
+  function logList() {
+    const w = globalThis;
+    if (!w.__HBUF_RPC_LOG__) {
+      w.__HBUF_RPC_LOG__ = [];
+    }
+    return w.__HBUF_RPC_LOG__;
+  }
+  function bytesToHex(buf, max2 = 64) {
+    const u8 = new Uint8Array(buf);
+    const n = Math.min(u8.length, max2);
+    let s = "";
+    for (let i = 0; i < n; i++) {
+      s += u8[i].toString(16).padStart(2, "0");
+    }
+    return u8.length > max2 ? s + "..." : s;
+  }
+  function toJson(v) {
+    if (isHData(v)) {
+      try {
+        return v.descriptors().toJson(v);
+      } catch (e) {
+        return { __toJsonError__: String(e) };
+      }
+    }
+    if (v instanceof ArrayBuffer) {
+      return { __bytes__: v.byteLength, __hex__: bytesToHex(v) };
+    }
+    if (v instanceof Blob) {
+      return { __blob__: v.size };
+    }
+    if (v instanceof Error2) {
+      return { code: v.code, msg: v.msg };
+    }
+    return v ?? null;
+  }
+  function headersToRecord(headers) {
+    if (!headers) return void 0;
+    const out = {};
+    try {
+      headers.forEach((value, key) => {
+        out[key] = value;
+      });
+    } catch (e) {
+      return void 0;
+    }
+    return Object.keys(out).length > 0 ? out : void 0;
+  }
+  function dispatchLog(item) {
+    const w = globalThis;
+    if (typeof w.dispatchEvent === "function") {
+      w.dispatchEvent(new CustomEvent("__hbuf_rpc_log__", { detail: item }));
+    }
+  }
+  function pushLog(entry) {
+    const item = { ...entry, id: ++logSeq, ts: Date.now() };
+    const list = logList();
+    list.unshift(item);
+    if (list.length > MAX_ENTRIES) {
+      list.length = MAX_ENTRIES;
+    }
+    dispatchLog(item);
+    return item.id;
+  }
+  function updateLog(id, patch) {
+    const list = logList();
+    const item = list.find((e) => e.id === id);
+    if (!item) return;
+    Object.assign(item, patch);
+    dispatchLog(item);
+  }
+  function devtoolsMiddleware(transport) {
+    return (next) => {
+      return async (req, opt) => {
+        const start = performance.now();
+        const id = pushLog({
+          transport,
+          path: opt?.path ?? opt?.method ?? "",
+          notification: opt?.notification ?? false,
+          traceId: opt?.traceId,
+          req: toJson(req),
+          status: "pending"
+        });
+        try {
+          const resp = await next(req, opt);
+          updateLog(id, {
+            resp: toJson(resp),
+            reqHeaders: headersToRecord(opt?.headers),
+            duration: Math.round(performance.now() - start),
+            status: "done"
+          });
+          return resp;
+        } catch (e) {
+          updateLog(id, {
+            resp: isHData(e) ? toJson(e) : void 0,
+            reqHeaders: headersToRecord(opt?.headers),
+            duration: Math.round(performance.now() - start),
+            error: e instanceof Error2 ? e.msg : e?.message ?? String(e),
+            status: "done"
+          });
+          throw e;
+        }
+      };
+    };
+  }
+
   // src/hrpc/rpc.ts
   var Error2 = class {
     constructor(code, msg) {
@@ -3936,12 +4043,13 @@ var hbuf = (() => {
       return data;
     };
   }
-  var Client = class {
+  var Client2 = class {
     constructor(request, option) {
       this.request = request;
+      const middleware = [devtoolsMiddleware(request.type), ...option?.middleware ?? []];
       this.middleware = (next) => {
-        for (let i = (option?.middleware?.length ?? 0) - 1; i >= 0; i--) {
-          next = option.middleware[i](next);
+        for (let i = middleware.length - 1; i >= 0; i--) {
+          next = middleware[i](next);
         }
         return next;
       };
@@ -3949,7 +4057,7 @@ var hbuf = (() => {
     invoke(id, name, method, request, desc) {
       name = name.replace(/^\/+|\/+$/g, "") + "/";
       return this.middleware(async (req, opt) => {
-        const resp = await this.request(name + method, desc == null, req, desc, opt);
+        const resp = await this.request.call(name + method, desc == null, req, desc, opt);
         if (desc) {
           if (resp.code !== 0) {
             throw resp;
@@ -3957,7 +4065,12 @@ var hbuf = (() => {
           return resp.data;
         }
         return resp;
-      })(request, { method, path: name + method, notification: desc == null, headers: new Headers() });
+      })(request, {
+        method,
+        path: name + method,
+        notification: desc == null,
+        headers: new Headers()
+      });
     }
   };
   var Server = class {
@@ -4147,7 +4260,10 @@ var hbuf = (() => {
       this.decode = option?.decode ?? NewJsonDecoder();
       this.encode = option?.encode ?? NewJsonEncode();
     }
-    async request(path, notification, req, desc, opt) {
+    get type() {
+      return "http";
+    }
+    async call(path, notification, req, desc, opt) {
       const body = isData(req) ? this.encode(req) : req;
       const resp = await this.fetch(path, body, opt);
       if (desc) {
@@ -4182,7 +4298,10 @@ var hbuf = (() => {
       this.decode = option?.decode ?? NewJsonDecoder();
       this.encode = option?.encode ?? NewJsonEncode();
     }
-    async request(path, notification, req, desc, opt) {
+    get type() {
+      return "http";
+    }
+    async call(path, notification, req, desc, opt) {
       const body = isData(req) ? this.encode(req) : req;
       const resp = await this.fetch(path, body, opt);
       if (desc) {
@@ -4288,7 +4407,10 @@ var hbuf = (() => {
       this.decode = option?.decode ?? NewJsonDecoder();
       this.encode = option?.encode ?? NewJsonEncode();
     }
-    async request(path, notification, req, desc, opt) {
+    get type() {
+      return "websocket";
+    }
+    async call(path, notification, req, desc, opt) {
       this.requestId++;
       let data = new WebSocketData(
         notification ? 2 /* Notification */ : 0 /* Request */,
@@ -4431,107 +4553,9 @@ var hbuf = (() => {
     }
   };
 
-  // src/hrpc/devtools.ts
-  var MAX_ENTRIES = 300;
-  var logSeq = 0;
-  function logList() {
-    const w = globalThis;
-    if (!w.__HBUF_RPC_LOG__) {
-      w.__HBUF_RPC_LOG__ = [];
-    }
-    return w.__HBUF_RPC_LOG__;
-  }
-  function bytesToHex(buf, max2 = 64) {
-    const u8 = new Uint8Array(buf);
-    const n = Math.min(u8.length, max2);
-    let s = "";
-    for (let i = 0; i < n; i++) {
-      s += u8[i].toString(16).padStart(2, "0");
-    }
-    return u8.length > max2 ? s + "..." : s;
-  }
-  function toJson(v) {
-    if (isHData(v)) {
-      try {
-        return v.descriptors().toJson(v);
-      } catch (e) {
-        return { __toJsonError__: String(e) };
-      }
-    }
-    if (v instanceof ArrayBuffer) {
-      return { __bytes__: v.byteLength, __hex__: bytesToHex(v) };
-    }
-    if (v instanceof Blob) {
-      return { __blob__: v.size };
-    }
-    if (v instanceof Error2) {
-      return { code: v.code, msg: v.msg };
-    }
-    return v ?? null;
-  }
-  function dispatchLog(item) {
-    const w = globalThis;
-    if (typeof w.dispatchEvent === "function") {
-      w.dispatchEvent(new CustomEvent("__hbuf_rpc_log__", { detail: item }));
-    }
-  }
-  function pushLog(entry) {
-    const item = { ...entry, id: ++logSeq, ts: Date.now() };
-    const list = logList();
-    list.unshift(item);
-    if (list.length > MAX_ENTRIES) {
-      list.length = MAX_ENTRIES;
-    }
-    dispatchLog(item);
-    return item.id;
-  }
-  function updateLog(id, patch) {
-    const list = logList();
-    const item = list.find((e) => e.id === id);
-    if (!item) return;
-    Object.assign(item, patch);
-    dispatchLog(item);
-  }
-  function installRpcDevtools(client, transport, base = "") {
-    const raw = client.middleware.bind(client);
-    client.middleware = (next) => {
-      return raw(async (req, opt) => {
-        const start = performance.now();
-        const id = pushLog({
-          transport,
-          path: base + (opt?.path ?? opt?.method ?? ""),
-          notification: opt?.notification ?? false,
-          traceId: opt?.traceId,
-          req: toJson(req),
-          status: "pending"
-        });
-        try {
-          const resp = await next(req, opt);
-          updateLog(id, {
-            resp: toJson(resp),
-            duration: Math.round(performance.now() - start),
-            status: "done"
-          });
-          return resp;
-        } catch (e) {
-          updateLog(id, {
-            resp: isHData(e) ? toJson(e) : void 0,
-            duration: Math.round(performance.now() - start),
-            error: e instanceof Error2 ? e.msg : e?.message ?? String(e),
-            status: "done"
-          });
-          throw e;
-        }
-      });
-    };
-    return () => {
-      client.middleware = raw;
-    };
-  }
-
   // src/index.ts
   var index_default = {
-    Client,
+    Client: Client2,
     HttpClient,
     FetchClient,
     WebSocketClient,
@@ -4543,7 +4567,6 @@ var hbuf = (() => {
     NewHBufDecoder,
     NewHBufEncode,
     WebSocketData,
-    installRpcDevtools,
     waiting,
     convertArray,
     RecordEntry,

@@ -124,7 +124,7 @@ test("标量 toJson/fromJson", () => {
 
     const t = new Date("2026-10-21T12:34:56.789Z")
     assert.strictEqual(new TimeDescriptor().toJson(t), String(t.getTime()))
-    assert.strictEqual(new TimeDescriptor().fromJson(String(t.getTime())).getTime(), t.getTime())
+    assert.strictEqual(new TimeDescriptor().fromJson(String(t.getTime()))?.getTime(), t.getTime())
     assert.strictEqual(new TimeDescriptor(true).fromJson(null), null)
 
     assert.strictEqual(new DecimalDescriptor().fromJson("123.45").toString(), "123.45")
