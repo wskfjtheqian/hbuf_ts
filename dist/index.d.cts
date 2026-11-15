@@ -375,7 +375,6 @@ interface Option {
     method: string;
     traceId?: string;
     path?: string;
-    notification?: boolean;
 }
 type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>;
 type HandlerMiddleware = (next: Handler) => Handler;
@@ -437,7 +436,7 @@ declare class Server {
     constructor(option?: ServerOption);
     register(id: number, name: string, methods: Method[]): void;
     unRegister(id: number, name: string): void;
-    response(path: string, req: ArrayBuffer | Uint8Array | Record<string, any>): Promise<ResponseType>;
+    response(path: string, req: ArrayBuffer | Uint8Array | Record<string, any>, broadcast?: boolean): Promise<ResponseType>;
 }
 
 interface HttpClientOption {
@@ -541,8 +540,8 @@ interface HbufRpcLogEntry {
     id: number;
     ts: number;
     transport: string;
+    method: string;
     path: string;
-    notification: boolean;
     traceId?: string;
     req?: any;
     resp?: any;

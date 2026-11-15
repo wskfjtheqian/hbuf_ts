@@ -1702,8 +1702,8 @@ function devtoolsMiddleware(transport) {
         id,
         ts: Date.now(),
         transport,
-        path: opt?.path ?? opt?.method ?? "",
-        notification: opt?.notification ?? false,
+        path: opt?.path ?? "",
+        method: opt?.method ?? "",
         traceId: opt?.traceId,
         req: toJson(req),
         status: "pending"
@@ -1881,9 +1881,8 @@ var Client = class {
       }
       return resp;
     })(request, {
-      method,
-      path: name + method,
-      notification: desc == null,
+      method: "Request",
+      path: "/" + name + method,
       headers: new Headers()
     });
   }
@@ -1893,9 +1892,10 @@ var Server = class {
     this.decode = option?.decode ?? NewJsonDecoder();
     this.encode = option?.encode ?? NewJsonEncode();
     this.methods = {};
+    const middleware = [...option?.middleware ?? [], devtoolsMiddleware("websocket")];
     this.middleware = (next) => {
-      for (let i = (option?.middleware?.length ?? 0) - 1; i >= 0; i--) {
-        next = option.middleware[i](next);
+      for (let i = middleware.length - 1; i >= 0; i--) {
+        next = middleware[i](next);
       }
       return next;
     };
@@ -1915,7 +1915,7 @@ var Server = class {
       }
     }
   }
-  async response(path, req) {
+  async response(path, req, broadcast) {
     path = "/" + path.replace(/^\/+|\/+$/g, "");
     const method = this.methods[path];
     if (!method) {
@@ -1930,7 +1930,11 @@ var Server = class {
         val = method.desc.fromJson(req);
       }
     }
-    return await this.middleware(method.handler)(val);
+    return await this.middleware(method.handler)(val, {
+      method: broadcast ? "Notify" : "Response",
+      path,
+      headers: new Headers()
+    });
   }
 };
 
@@ -2334,7 +2338,7 @@ var WebSocketClient = class {
   }
   async onRequest(request, broadcast) {
     if (broadcast) {
-      this.server?.response(request.path, request.data);
+      this.server?.response(request.path, request.data, true);
       return;
     }
     let data = new WebSocketData(

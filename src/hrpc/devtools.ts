@@ -6,8 +6,8 @@ export interface HbufRpcLogEntry {
     id: number
     ts: number
     transport: string
+    method: string
     path: string
-    notification: boolean
     traceId?: string
     req?: any
     resp?: any
@@ -84,8 +84,8 @@ export function devtoolsMiddleware(transport: "http" | "websocket"): HandlerMidd
                 id,
                 ts: Date.now(),
                 transport,
-                path: (opt?.path ?? opt?.method ?? ""),
-                notification: opt?.notification ?? false,
+                path: (opt?.path ?? ""),
+                method: (opt?.method ?? ""),
                 traceId: opt?.traceId,
                 req: toJson(req),
                 status: "pending",

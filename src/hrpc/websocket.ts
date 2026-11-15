@@ -123,7 +123,7 @@ export interface WebSocketClientOption {
     encode?: Encoder
 }
 
-export class WebSocketClient implements Request{
+export class WebSocketClient implements Request {
     protected baseUrl: string;
     protected socket?: WebSocket;
     protected requestId: bigint = 0n
@@ -266,7 +266,7 @@ export class WebSocketClient implements Request{
 
     private async onRequest(request: WebSocketData, broadcast: boolean) {
         if (broadcast) {
-            this.server?.response(request.path!, request.data as ArrayBuffer)
+            this.server?.response(request.path!, request.data as ArrayBuffer, true)
             return
         }
         let data = new WebSocketData(

@@ -23,8 +23,6 @@ export interface Option {
     traceId?: string
     // path 完整 RPC 路径（name/method），由 invoke 写入，供中间件（如调试埋点）使用
     path?: string
-    // notification 是否单向通知（desc == null），由 invoke 写入
-    notification?: boolean
 }
 
 export type Handler = (req: RequestType, opt?: Option) => Promise<ResponseType>
@@ -250,9 +248,8 @@ export class Client {
             }
             return resp as T
         })(request, {
-            method: method,
-            path: name + method,
-            notification: desc == null,
+            method: "Request",
+            path: "/" + name + method,
             headers: new Headers()
         }) as Promise<T>
     }
@@ -286,9 +283,10 @@ export class Server {
         this.decode = option?.decode ?? NewJsonDecoder()
         this.encode = option?.encode ?? NewJsonEncode()
         this.methods = {}
+        const middleware = [...option?.middleware ?? [], devtoolsMiddleware("websocket")]
         this.middleware = (next: Handler): Handler => {
-            for (let i = (option?.middleware?.length ?? 0) - 1; i >= 0; i--) {
-                next = option!.middleware![i](next)
+            for (let i = middleware.length - 1; i >= 0; i--) {
+                next = middleware[i](next)
             }
             return next
         }
@@ -311,7 +309,7 @@ export class Server {
         }
     }
 
-    public async response(path: string, req: ArrayBuffer | Uint8Array | Record<string, any>): Promise<ResponseType> {
+    public async response(path: string, req: ArrayBuffer | Uint8Array | Record<string, any>, broadcast?: boolean): Promise<ResponseType> {
         // path 归一化：与 register 的 "/name/method" 键一致（兼容无前导斜杠的传输层路径）
         path = "/" + path.replace(/^\/+|\/+$/g, "")
         const method = this.methods[path]
@@ -331,6 +329,10 @@ export class Server {
                 val = method.desc.fromJson(req)
             }
         }
-        return await this.middleware(method.handler)(val)
+        return await this.middleware(method.handler)(val, {
+            method: broadcast ? "Notify" : "Response",
+            path: path,
+            headers: new Headers()
+        })
     }
 }
