@@ -1,5 +1,6 @@
 import {HData, isHData} from "../hbuf/data";
 import {
+    BytesDescriptor,
     DataDescriptor,
     Descriptor,
     FieldDesc,
@@ -14,7 +15,6 @@ import {
 import {
     Decoder,
     Encoder,
-    JsonDescriptor,
     NewJsonDecoder,
     NewJsonEncode,
     NewResultDesc,
@@ -54,13 +54,13 @@ export class WebSocketData implements HData {
     }
 
     descriptors(): Descriptor {
-        const dataDesc = isHData(this.data) ? this.data.descriptors() : jsonDesc
+        const dataDesc = isHData(this.data) ? this.data.descriptors() : bytesDesc
         return webSocketDataDesc(dataDesc)
     }
 }
 
 // jsonDesc JSON 透传描述符（信封 data 的缺省编解码）。
-const jsonDesc: JsonDescriptor = new JsonDescriptor(true)
+const bytesDesc: BytesDescriptor = new BytesDescriptor(true)
 
 function webSocketDataDesc(dataDesc: Descriptor): DataDescriptor {
     return new DataDescriptor(
@@ -79,28 +79,28 @@ function webSocketDataDesc(dataDesc: Descriptor): DataDescriptor {
                 set: (o: WebSocketData, v: any) => o.header = v
             }],
             [3, {
+                name: "data",
+                desc: new RefDescriptor(() => dataDesc, true),
+                get: (o: WebSocketData) => o.data,
+                set: (o: WebSocketData, v: any) => o.data = v
+            }],
+            [4, {
                 name: "id",
                 desc: new Int64Descriptor(true),
                 get: (o: WebSocketData) => o.id,
                 set: (o: WebSocketData, v: any) => o.id = v
             }],
-            [4, {
+            [5, {
                 name: "path",
                 desc: new StringDescriptor(true),
                 get: (o: WebSocketData) => o.path,
                 set: (o: WebSocketData, v: any) => o.path = v
             }],
-            [5, {
+            [6, {
                 name: "status",
                 desc: new Int32Descriptor(true),
                 get: (o: WebSocketData) => o.status,
                 set: (o: WebSocketData, v: any) => o.status = v
-            }],
-            [6, {
-                name: "data",
-                desc: new RefDescriptor(() => dataDesc, true),
-                get: (o: WebSocketData) => o.data,
-                set: (o: WebSocketData, v: any) => o.data = v
             }],
         ]),
     )
@@ -248,7 +248,7 @@ export class WebSocketClient implements Request {
 
     private async onMessage(buffer: ArrayBuffer) {
         this.headTimeout = false
-        const response = this.decode(buffer, webSocketDataDesc(jsonDesc)) as WebSocketData
+        const response = this.decode(buffer, webSocketDataDesc(bytesDesc)) as WebSocketData
 
         if (response.type == RpcType.Response) {
             if (response.status == 200) {

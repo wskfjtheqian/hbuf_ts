@@ -131,49 +131,6 @@ export function NewResultDesc(dataDesc?: Descriptor): DataDescriptor {
     )
 }
 
-/**
- * JsonDescriptor JSON 透传描述符：值在 JSON 编解码中原样透传。
- * 仅用于 JSON 编解码路径（如 WebSocket 信封的异构 data 字段），不支持二进制编解码。
- */
-export class JsonDescriptor implements Descriptor {
-    constructor(private isPtr = false) {
-    }
-
-    clone(val?: any, target?: any): any {
-        return val
-    }
-
-    factory(): any {
-        return null
-    }
-
-    fromJson(json: JsonValue): any {
-        if (json == null) {
-            return this.isPtr ? null : undefined
-        }
-        return json
-    }
-
-    toJson(v: any): JsonValue {
-        return v == null ? null : v
-    }
-
-    zero(): any {
-        return null
-    }
-
-    isEmpty(v: any): boolean {
-        return v == null
-    }
-
-    encode(buf: Writer, v: any, id?: number): void {
-        throw new HBufError("json descriptor: encode not supported")
-    }
-
-    decode(r: Reader, typ: Type, valRead: boolean, valueLen: number, target?: any): any {
-        throw new HBufError("json descriptor: decode not supported")
-    }
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

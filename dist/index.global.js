@@ -3966,38 +3966,6 @@ var hbuf = (() => {
       fields
     );
   }
-  var JsonDescriptor = class {
-    constructor(isPtr = false) {
-      this.isPtr = isPtr;
-    }
-    clone(val, target) {
-      return val;
-    }
-    factory() {
-      return null;
-    }
-    fromJson(json) {
-      if (json == null) {
-        return this.isPtr ? null : void 0;
-      }
-      return json;
-    }
-    toJson(v) {
-      return v == null ? null : v;
-    }
-    zero() {
-      return null;
-    }
-    isEmpty(v) {
-      return v == null;
-    }
-    encode(buf, v, id) {
-      throw new HBufError("json descriptor: encode not supported");
-    }
-    decode(r, typ, valRead, valueLen, target) {
-      throw new HBufError("json descriptor: decode not supported");
-    }
-  };
   function NewJsonDecoder() {
     const decoder = new TextDecoder("utf-8");
     return (buffer, desc) => {
@@ -4323,11 +4291,11 @@ var hbuf = (() => {
       this.data = data;
     }
     descriptors() {
-      const dataDesc = isHData(this.data) ? this.data.descriptors() : jsonDesc;
+      const dataDesc = isHData(this.data) ? this.data.descriptors() : bytesDesc;
       return webSocketDataDesc(dataDesc);
     }
   };
-  var jsonDesc = new JsonDescriptor(true);
+  var bytesDesc = new BytesDescriptor(true);
   function webSocketDataDesc(dataDesc) {
     return new DataDescriptor(
       () => new WebSocketData(0 /* Request */),
@@ -4345,28 +4313,28 @@ var hbuf = (() => {
           set: (o, v) => o.header = v
         }],
         [3, {
+          name: "data",
+          desc: new RefDescriptor(() => dataDesc, true),
+          get: (o) => o.data,
+          set: (o, v) => o.data = v
+        }],
+        [4, {
           name: "id",
           desc: new Int64Descriptor(true),
           get: (o) => o.id,
           set: (o, v) => o.id = v
         }],
-        [4, {
+        [5, {
           name: "path",
           desc: new StringDescriptor(true),
           get: (o) => o.path,
           set: (o, v) => o.path = v
         }],
-        [5, {
+        [6, {
           name: "status",
           desc: new Int32Descriptor(true),
           get: (o) => o.status,
           set: (o, v) => o.status = v
-        }],
-        [6, {
-          name: "data",
-          desc: new RefDescriptor(() => dataDesc, true),
-          get: (o) => o.data,
-          set: (o, v) => o.data = v
         }]
       ])
     );
@@ -4487,7 +4455,7 @@ var hbuf = (() => {
     }
     async onMessage(buffer) {
       this.headTimeout = false;
-      const response = this.decode(buffer, webSocketDataDesc(jsonDesc));
+      const response = this.decode(buffer, webSocketDataDesc(bytesDesc));
       if (response.type == 1 /* Response */) {
         if (response.status == 200) {
           this.requestMap.get(response.id)?.resolve(response);
